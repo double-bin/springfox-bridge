@@ -1,3 +1,3 @@
 # Auto Configure
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.github.doublebin.utils.springfox.bridge.spring.boot.starter.autoconfigure.SpringfoxBridgeAutoConfiguration
+com.github.doublebin.springfox.bridge.spring.boot.starter.autoconfigure.SpringfoxBridgeAutoConfiguration
