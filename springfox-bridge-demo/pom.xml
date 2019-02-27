@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>pers.doublebin.utils</groupId>
+        <groupId>com.github.doublebin.utils</groupId>
         <artifactId>springfox-bridge-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -35,7 +35,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>pers.doublebin.utils</groupId>
+            <groupId>com.github.doublebin.utils</groupId>
             <artifactId>springfox-bridge-spring-boot-starter</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
