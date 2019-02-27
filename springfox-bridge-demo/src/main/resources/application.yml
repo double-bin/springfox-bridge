@@ -1,0 +1,4 @@
+server.port: 2222
+server.context-path: /needle
+
+spring.application.name: bridge-demo
