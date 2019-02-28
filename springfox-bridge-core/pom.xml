@@ -12,7 +12,8 @@
 
     <artifactId>springfox-bridge-core</artifactId>
     <packaging>jar</packaging>
-	<!--<name>springfox-bridge</name>-->
+	<name>springfox-bridge-core</name>
+	<description>springfox-bridge-core</description>
 	
 	<dependencies>
 		<dependency>

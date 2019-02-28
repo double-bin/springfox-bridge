@@ -12,6 +12,24 @@
     <description>springfox-bridge-parent</description>
     <url>https://github.com/double-bin/springfox-bridge</url>
 
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>doublebin</name>
+            <email>njhkhtlbb@163.com</email>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git@github.com:double-bin/springfox-bridge.git</connection>
+        <developerConnection>scm:git:git@github.com:double-bin/springfox-bridge.git</developerConnection>
+        <url>git@github.com:double-bin/springfox-bridge.git</url>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -22,7 +40,7 @@
     <modules>
         <module>springfox-bridge-core</module>
         <module>springfox-bridge-spring-boot-starter</module>
-        <module>springfox-bridge-demo</module>
+        <!--<module>springfox-bridge-demo</module>-->
     </modules>
 
     <dependencyManagement>

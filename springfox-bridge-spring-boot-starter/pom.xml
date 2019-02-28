@@ -12,7 +12,8 @@
 
     <artifactId>springfox-bridge-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
-    <!--<name>springfox-bridge-spring-boot-starter</name>-->
+    <name>springfox-bridge-spring-boot-starter</name>
+    <description>springfox-bridge-spring-boot-starter</description>
 
     <dependencies>
         <dependency>

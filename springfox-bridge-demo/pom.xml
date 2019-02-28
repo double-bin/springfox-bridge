@@ -12,7 +12,8 @@
 
     <artifactId>springfox-bridge-demo</artifactId>
     <packaging>jar</packaging>
-    <!--<name>springfox-bridge-demo</name>-->
+    <name>springfox-bridge-demo</name>
+    <description>springfox-bridge-demo</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
