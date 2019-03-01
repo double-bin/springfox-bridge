@@ -1,5 +1,6 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -11,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOperation;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
+import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import javassist.CannotCompileException;
@@ -28,6 +30,7 @@ import javassist.bytecode.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -43,7 +46,7 @@ public class BridgeControllerBuilder {
 
     private static ConcurrentHashMap<String, AtomicInteger> methodNameMap = new ConcurrentHashMap<String, AtomicInteger>();
 
-    public static String classFilePath = "/temp/springfox-bridge";
+    private static String classFilePath = FileUtil.getCurrentFilePath();
 
     private static final String NEW_CLASS_NAME_PRE = "swagger.bridge.controllers.Swagger";
 

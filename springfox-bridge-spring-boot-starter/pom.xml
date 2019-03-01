@@ -7,19 +7,19 @@
     <parent>
         <groupId>com.github.double-bin</groupId>
         <artifactId>springfox-bridge-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>springfox-bridge-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>springfox-bridge-spring-boot-starter</name>
-    <description>springfox-bridge-spring-boot-starter</description>
+    <description>A plugin to create swagger documents for no restful apis in spring based applications.</description>
 
     <dependencies>
         <dependency>
             <groupId>com.github.double-bin</groupId>
             <artifactId>springfox-bridge-core</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>

@@ -1,6 +1,7 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeModelProperty;
+import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import javassist.*;
@@ -26,7 +27,7 @@ public class BridgeRequestBuilder {
 
     private static final ClassPool pool = ClassPool.getDefault();
 
-    public static String classFilePath = "/temp/springfox-bridge";
+    private static String classFilePath = FileUtil.getCurrentFilePath();
 
     public static Class newRequestClass(Method method, String simpleClassName) {
         Parameter[] parameters = method.getParameters();
