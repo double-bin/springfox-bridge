@@ -5,14 +5,14 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 
-@ApiModel(value="TestRequest", description = "测试请求体,desc界面不展示")
 @Getter
 @Setter
-public class TestRequest {
-
-    @ApiModelProperty(value = "唯一id", required = true)
-    private long uuid;
+@ApiModel(value="TestRequest2", description = "测试请求体2")
+public class TestRequest2 {
 
     @ApiModelProperty(value = "名字", required = true)
     private String name;
+
+    @ApiModelProperty(value = "描述", required = true)
+    private String desc;
 }
