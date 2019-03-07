@@ -9,7 +9,7 @@ import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeMode
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOperation;
 
 @Service
-@BridgeApi(value = "TestService1 Apis", description = "测试服务1")
+//@BridgeApi(value = "TestService1 Apis", description = "测试服务1")
 @BridgeGroup("test-group1")
 public class TestService1 {
 

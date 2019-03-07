@@ -23,7 +23,7 @@ public class BridgeRequestBuilder {
 
     private static ConcurrentHashMap<String, AtomicInteger> classNameMap = new ConcurrentHashMap<String, AtomicInteger>();
 
-    private static final String NEW_CLASS_NAME_PRE = "swagger.bridge.model.request.";
+    private static final String NEW_CLASS_NAME_PRE = "bridge.model.request.";
 
     private static final ClassPool pool = ClassPool.getDefault();
 

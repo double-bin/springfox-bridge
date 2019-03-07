@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,23 +15,14 @@ import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOper
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiOperation;
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtField;
-import javassist.CtMethod;
-import javassist.Modifier;
-import javassist.bytecode.AnnotationsAttribute;
-import javassist.bytecode.ClassFile;
-import javassist.bytecode.ConstPool;
-import javassist.bytecode.MethodInfo;
-import javassist.bytecode.ParameterAnnotationsAttribute;
+import javassist.*;
+import javassist.bytecode.*;
 import javassist.bytecode.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.FileSystemUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -38,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.doublebin.springfox.bridge.core.util.ReflectUtil;
 import com.github.doublebin.springfox.bridge.core.util.StringUtil;
 import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 @Slf4j
 public class BridgeControllerBuilder {
@@ -48,13 +41,15 @@ public class BridgeControllerBuilder {
 
     private static String classFilePath = FileUtil.getCurrentFilePath();
 
-    private static final String NEW_CLASS_NAME_PRE = "swagger.bridge.controllers.Swagger";
+    private static final String NEW_CLASS_NAME_PRE = "bridge.controllers.Bridge";
+
+    private static final String NEW_SUB_CLASS_NAME_PRE = "bridge.model.sub.";
 
     private static final ClassPool pool = ClassPool.getDefault();
 
-    public static Class newControllerClass(Class oldClass){
+    public static Class newControllerClass(Class oldClass) {
 
-        if (ReflectUtil.hasAnnotationAtClass(oldClass, BridgeApi.class)){
+        if (ReflectUtil.hasAnnotationAtClass(oldClass, BridgeApi.class)) {
 
             CtClass newControllerCtClass = pool.makeClass(buildNewClassName(oldClass));
 
@@ -64,11 +59,11 @@ public class BridgeControllerBuilder {
                 addAutowiredAnnotationAtField(beanCtField);
 
                 Method[] allMethods = oldClass.getMethods();
-                for(Method method: allMethods){
-                    if(ReflectUtil.hasAnnotationAtMethod(method, BridgeOperation.class)){
+                for (Method method : allMethods) {
+                    if (ReflectUtil.hasAnnotationAtMethod(method, BridgeOperation.class)) {
                         String methodName = method.getName();
 
-                        Class requestBodyClass = BridgeRequestBuilder.newRequestClass(method,oldClass.getSimpleName()+ StringUtil.toCapitalizeCamelCase(methodName)+"Request");
+                        Class requestBodyClass = BridgeRequestBuilder.newRequestClass(method, oldClass.getSimpleName() + StringUtil.toCapitalizeCamelCase(methodName) + "Request");
 
                         CtMethod newCtMethod = addAndGetHomonymicMethod(method, newControllerCtClass, requestBodyClass);
 
@@ -83,7 +78,7 @@ public class BridgeControllerBuilder {
                 newControllerCtClass.writeFile(classFilePath);
                 return newControllerCtClass.toClass();
 
-            } catch (CannotCompileException|IOException e) {
+            } catch (CannotCompileException | IOException e) {
                 log.error("New controller class for old class [{}] failed.", oldClass.getName(), e);
                 throw new BridgeException("New controller class failed", e);
             }
@@ -93,40 +88,80 @@ public class BridgeControllerBuilder {
         throw new BridgeException(oldClass.getName() + " has no BridgeApi annotation, cannot new controller class.");
     }
 
+
     private static CtMethod addAndGetHomonymicMethod(Method method, CtClass newControllerCtClass, Class requestBodyClass) {
         try {
             String methodName = method.getName();
             Class returnType = method.getReturnType();
             Parameter[] parameters = method.getParameters();
 
-            CtMethod newCtMethod = new CtMethod(pool.get(returnType.getName()), methodName,
-                    null == requestBodyClass ? new CtClass[] {} : new CtClass[] {pool.get(requestBodyClass.getName())}, newControllerCtClass);
-            newCtMethod.setModifiers(Modifier.PUBLIC);
+            CtClass newSubCtClass = newSubCtClassFromGenericReturnType(method);
+            if (null == newSubCtClass) {
 
-            int size = parameters.length;
+                CtMethod newCtMethod = new CtMethod(pool.get(returnType.getName()), methodName,
+                        null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
+                newCtMethod.setModifiers(Modifier.PUBLIC);
 
-            String body = "{return this.bean." + methodName + "(";
-            for (int i = 0; i < size; i++) {
+                int size = parameters.length;
 
-                body += ("$1.getParam" + i + "()"); //$1 means the first parameter
-                if (i != size - 1) {
-                    body += ",";
+                String body = "{return this.bean." + methodName + "(";
+                for (int i = 0; i < size; i++) {
+
+                    body += ("$1.getParam" + i + "()"); //$1 means the first parameter
+                    if (i != size - 1) {
+                        body += ",";
+                    }
                 }
+
+                body += ");}";
+
+                newCtMethod.setBody(body);
+                newControllerCtClass.addMethod(newCtMethod);
+                return newCtMethod;
+            } else {
+                ConstPool constpool = newSubCtClass.getClassFile().getConstPool();
+                Annotation apiModelAnnotation = new Annotation(ApiModel.class.getName(), constpool);
+                apiModelAnnotation.addMemberValue("value", new StringMemberValue(returnType.getSimpleName(), constpool));
+                JavassistUtil.addAnnotationForCtClass(newSubCtClass, apiModelAnnotation);
+                newSubCtClass.writeFile(classFilePath);
+
+                Class newSubClass = newSubCtClass.toClass();
+
+                CtMethod newCtMethod = new CtMethod(pool.get(newSubClass.getName()), methodName,
+                        null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
+                newCtMethod.setModifiers(Modifier.PUBLIC);
+
+                int size = parameters.length;
+
+
+
+                String body = "{return com.github.doublebin.springfox.bridge.core.util.JsonUtil.readValue(com.github.doublebin.springfox.bridge.core.util.JsonUtil.writeValueAsString(" +
+                        "this.bean." + methodName + "(";
+                for (int i = 0; i < size; i++) {
+
+                    body += ("$1.getParam" + i + "()"); //$1 means the first parameter
+                    if (i != size - 1) {
+                        body += ",";
+                    }
+                }
+
+                body += "))," +newSubClass.getName()+".class);}";
+
+                newCtMethod.setBody("{return new " +newSubClass.getName()+"()"+
+                        ";}");
+
+
+                newControllerCtClass.addMethod(newCtMethod);
+                return newCtMethod;
             }
 
-            body += ");}";
-
-            newCtMethod.setBody(body);
-            newControllerCtClass.addMethod(newCtMethod);
-            return newCtMethod;
-
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("Add new homonymic method failed.", e);
             throw new BridgeException("Add new homonymic method failed.", e);
         }
     }
 
-    private static void addAnnotationsAtMethod(CtMethod newCtMethod, Method method){
+    private static void addAnnotationsAtMethod(CtMethod newCtMethod, Method method) {
         ConstPool constpool = newCtMethod.getDeclaringClass().getClassFile().getConstPool();
         AnnotationsAttribute methodAttr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
 
@@ -139,7 +174,7 @@ public class BridgeControllerBuilder {
     }
 
 
-    private static void addApiOperationAnnotationAtMethod(AnnotationsAttribute methodAttr, Method method, ConstPool constpool){
+    private static void addApiOperationAnnotationAtMethod(AnnotationsAttribute methodAttr, Method method, ConstPool constpool) {
 
         String[] annotationMethodNames = new String[]{"value", "notes", "tags", "response", "responseContainer", "responseReference",
                 "httpMethod", "produces", "consumes", "protocols", "hidden", "responseHeaders", "code", "extensions"};
@@ -149,24 +184,24 @@ public class BridgeControllerBuilder {
         methodAttr.addAnnotation(apiOperationAnnotation);
     }
 
-    private static void addRequestMappingAnnotationAtMethod(AnnotationsAttribute methodAttr, Method method, ConstPool constpool){
+    private static void addRequestMappingAnnotationAtMethod(AnnotationsAttribute methodAttr, Method method, ConstPool constpool) {
         Annotation requestMappingAnnotation = new Annotation(RequestMapping.class.getName(), constpool);
 
         Parameter[] parameters = method.getParameters();
-        String requestMappingValue = "/"+method.getName();
-        if(ArrayUtils.isNotEmpty(parameters)){
+        String requestMappingValue = "/" + method.getName();
+        if (ArrayUtils.isNotEmpty(parameters)) {
             requestMappingValue += "/";
 
             String suffix = "";
-            for(Parameter parameter: parameters){
+            for (Parameter parameter : parameters) {
                 Class parameterType = parameter.getType();
                 String typeName = parameterType.getSimpleName();
-                suffix += typeName.substring(0,1);
+                suffix += typeName.substring(0, 1);
             }
 
             requestMappingValue += suffix;
 
-            String methodNameIncludeSuffix = method.getDeclaringClass().getName()+"."+method.getName()+"."+suffix;
+            String methodNameIncludeSuffix = method.getDeclaringClass().getName() + "." + method.getName() + "." + suffix;
             methodNameMap.putIfAbsent(methodNameIncludeSuffix, new AtomicInteger(0));
             int count = methodNameMap.get(methodNameIncludeSuffix).incrementAndGet();
 
@@ -174,7 +209,6 @@ public class BridgeControllerBuilder {
                 requestMappingValue += "/" + (count - 1); //去重
             }
         }
-
 
 
         MemberValue[] values = new StringMemberValue[]{new StringMemberValue(requestMappingValue, constpool)};
@@ -193,23 +227,23 @@ public class BridgeControllerBuilder {
         methodAttr.addAnnotation(requestMappingAnnotation);
     }
 
-    private static void addAnnotationsAtMethodParameters(CtMethod newCtMethod){
+    private static void addAnnotationsAtMethodParameters(CtMethod newCtMethod) {
         ConstPool constpool = newCtMethod.getDeclaringClass().getClassFile().getConstPool();
         ParameterAnnotationsAttribute parameterAnnotationsAttribute = new ParameterAnnotationsAttribute(constpool, ParameterAnnotationsAttribute.visibleTag);
         Annotation[][] paramArrays = new Annotation[1][1];
         Annotation[] addAnno = new Annotation[1];
-        addAnno[0] =  new Annotation(RequestBody.class.getName(), constpool);
+        addAnno[0] = new Annotation(RequestBody.class.getName(), constpool);
         paramArrays[0] = addAnno;
         parameterAnnotationsAttribute.setAnnotations(paramArrays);
         newCtMethod.getMethodInfo().addAttribute(parameterAnnotationsAttribute);
     }
 
-    private static void addTagsMember(Annotation apiAnnotation, Class oldClass, ConstPool constpool){
-        String[] tags = (String[])ReflectUtil.getAnnotationValue(oldClass, BridgeApi.class, "tags");
+    private static void addTagsMember(Annotation apiAnnotation, Class oldClass, ConstPool constpool) {
+        String[] tags = (String[]) ReflectUtil.getAnnotationValue(oldClass, BridgeApi.class, "tags");
         List<StringMemberValue> tagsList = new ArrayList<StringMemberValue>();
         tagsList.add(new StringMemberValue(oldClass.getName(), constpool));
-        if(ArrayUtils.isNotEmpty(tags)){
-            for(String tag : tags){
+        if (ArrayUtils.isNotEmpty(tags)) {
+            for (String tag : tags) {
                 if (StringUtil.isNoneBlank(tag)) {
                     tagsList.add(new StringMemberValue(tag, constpool));
                 }
@@ -235,7 +269,7 @@ public class BridgeControllerBuilder {
         classAttr.addAnnotation(apiAnnotation);
 
         Annotation requestMappingAnnotation = new Annotation(RequestMapping.class.getName(), constpool);
-        MemberValue[] values = new StringMemberValue[]{new StringMemberValue("/"+oldClass.getName(), constpool)};
+        MemberValue[] values = new StringMemberValue[]{new StringMemberValue("/" + oldClass.getName(), constpool)};
         ArrayMemberValue arrayMemberValue = new ArrayMemberValue(constpool);
         arrayMemberValue.setValue(values);
         requestMappingAnnotation.addMemberValue("value", arrayMemberValue);
@@ -246,6 +280,10 @@ public class BridgeControllerBuilder {
 
     private static String buildNewClassName(Class oldClass) {
         String orignClassName = NEW_CLASS_NAME_PRE + oldClass.getSimpleName();
+        return buildNewClassName(orignClassName);
+    }
+
+    private static String buildNewClassName(String orignClassName) {
         classNameMap.putIfAbsent(orignClassName, new AtomicInteger(0));
         int count = classNameMap.get(orignClassName).incrementAndGet();
 
@@ -257,6 +295,33 @@ public class BridgeControllerBuilder {
         return newClassName;
     }
 
+    public static CtClass newSubCtClassFromGenericReturnType(Method method) {
+        Type type = method.getGenericReturnType();
+        System.out.println(method.getName());
+        ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) type; //强转成具体的实现类
+        Type[] genericTypes = parameterizedType.getActualTypeArguments();  //取得包含的泛型类型
+        if (ArrayUtils.isEmpty(genericTypes)) {
+            return null;
+        } else {
+            try {
+                String newSubClassName = buildNewClassName(NEW_SUB_CLASS_NAME_PRE + parameterizedType.getRawType().getSimpleName() + "Sub");
+                CtClass newReturnCtClass = pool.makeClass(newSubClassName);
+                newReturnCtClass.setSuperclass(pool.get(parameterizedType.getRawType().getName()));
+                //newReturnCtClass.setGenericSignature(new SignatureAttribute.TypeVariable(parameterizedType.getTypeName()).encode());
+                CtClass[] params = new CtClass[]{};
+                CtConstructor ctor = CtNewConstructor.make(params, null, CtNewConstructor.PASS_PARAMS, null, null, newReturnCtClass);
+                newReturnCtClass.addConstructor(ctor);
+
+                return newReturnCtClass;
+            } catch (CannotCompileException | NotFoundException e) {
+                log.error("New generic's sub class for old class [{}] failed.", parameterizedType.getRawType().getName(), e);
+                throw new BridgeException("New generic's sub class failed", e);
+            }
+
+
+        }
+    }
+
     private static void addAutowiredAnnotationAtField(CtField beanCtField) {
         ConstPool constpool = beanCtField.getDeclaringClass().getClassFile().getConstPool();
         Annotation autowiredAnnotation = new Annotation(Autowired.class.getName(), constpool);
@@ -265,12 +330,12 @@ public class BridgeControllerBuilder {
 
     private static CtField addAndGetBeanField(Class oldClass, CtClass newControllerCtClass) {
         try {
-            CtField beanCtField = new CtField(pool.get(oldClass.getName()),  "bean", newControllerCtClass);
+            CtField beanCtField = new CtField(pool.get(oldClass.getName()), "bean", newControllerCtClass);
             beanCtField.setModifiers(Modifier.PRIVATE);
             newControllerCtClass.addField(beanCtField); //添加属性
             return beanCtField;
-        } catch (Exception e){
-            log.error("Add bean property failed for new class {}, bean type is {}.",newControllerCtClass.getName(), oldClass.getName(), e);
+        } catch (Exception e) {
+            log.error("Add bean property failed for new class {}, bean type is {}.", newControllerCtClass.getName(), oldClass.getName(), e);
             throw new BridgeException("Add bean property failed for new class " + newControllerCtClass.getName(), e);
         }
 

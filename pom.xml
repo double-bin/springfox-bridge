@@ -35,6 +35,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
         <org.springframework.version>4.3.19.RELEASE</org.springframework.version>
+        <springfox.version>2.7.0</springfox.version>
     </properties>
 
     <modules>
@@ -76,13 +77,13 @@
             <dependency>
                 <groupId>io.springfox</groupId>
                 <artifactId>springfox-swagger2</artifactId>
-                <version>2.6.1</version>
+                <version>${springfox.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.springfox</groupId>
                 <artifactId>springfox-swagger-ui</artifactId>
-                <version>2.6.1</version>
+                <version>${springfox.version}</version>
             </dependency>
 
             <!-- https://mvnrepository.com/artifact/org.javassist/javassist -->

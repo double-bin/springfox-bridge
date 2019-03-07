@@ -8,7 +8,7 @@ import com.github.doublebin.springfox.bridge.demo.model.TestRequest1;
 import org.springframework.stereotype.Service;
 
 @Service
-@BridgeApi(value = "TestService3 Apis", description = "测试服务3")
+//@BridgeApi(value = "TestService3 Apis", description = "测试服务3")
 @BridgeGroup("test-group1")
 public class TestService3 {
     @BridgeOperation(value = "测试查询", notes = "测试查询方法说明")

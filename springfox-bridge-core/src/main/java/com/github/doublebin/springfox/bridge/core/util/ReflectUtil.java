@@ -315,7 +315,7 @@ public class ReflectUtil
         if(null == getAnnotation(o)) {
             return false;
         }
-
         return true;
     }
+
 }
