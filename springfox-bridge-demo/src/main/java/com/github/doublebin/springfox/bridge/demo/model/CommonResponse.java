@@ -12,9 +12,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel(description = "通用响应对象")
-public class CommonResponse<T, S> {
+public class CommonResponse<TM, S> {
 
-    T get() {
+    TM get() {
         return null;
     }
 
@@ -22,7 +22,7 @@ public class CommonResponse<T, S> {
     private boolean success;
 
     @ApiModelProperty(value = "响应数据", required = true)
-    private T data;
+    private TM data;
 
     @ApiModelProperty(value = "模型", required = true)
     private S model;
