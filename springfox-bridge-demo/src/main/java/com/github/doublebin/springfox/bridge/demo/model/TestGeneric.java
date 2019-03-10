@@ -15,11 +15,17 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel(value="TestGeneric", description = "测试泛型")
-public class TestGeneric<TT, BB> {
+public class TestGeneric<TT, BB, CC> {
 
     @ApiModelProperty(value = "数据体", required = true)
     private TT data;
 
     @ApiModelProperty(value = "名称", required = true)
     private BB name;
+
+    private CC desc;
+
+    private CommonResponse<TT, String> ttData;
+
+    private CommonResponse<TT, String> tttData;
 }

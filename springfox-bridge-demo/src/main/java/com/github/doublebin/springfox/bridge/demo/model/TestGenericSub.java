@@ -16,14 +16,19 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @ApiModel(value="TestGeneric<TestRequest1>", description = "返回泛型")
-public class TestGenericSub<TT,SS> extends TestGeneric<SS, String> {
+public class TestGenericSub<TT, SS> //extends TestGeneric<SS, String, Integer>
+ {
 
-    private TT tdata;
+    private TT isData;
 
     private SS sdata;
 
     @ApiModelProperty(value = "数据体", required = true)
     private TestResult pdata;
+
+    private CommonResponse<TestResult,String> cData;
+
+    private CommonResponse<SS, TestGeneric<SS, String, Integer>> ttData;
 
 
 

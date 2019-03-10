@@ -2,17 +2,24 @@ package com.github.doublebin.springfox.bridge.core.util;
 
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.TypeVariable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
+import sun.reflect.generics.repository.AbstractRepository;
+import sun.reflect.generics.repository.ClassRepository;
+import sun.reflect.generics.tree.ClassSignature;
 
 @Slf4j
 public class ReflectUtil
@@ -316,6 +323,57 @@ public class ReflectUtil
             return false;
         }
         return true;
+    }
+
+    public static ClassRepository getClassRepository(Class clazz) {
+        try {
+            Method getGenericInfoMethod = Class.class.getDeclaredMethod("getGenericInfo");
+            getGenericInfoMethod.setAccessible(true);
+            return (ClassRepository)getGenericInfoMethod.invoke(clazz);
+        } catch (Exception e) {
+            throw new BridgeException("Get ClassRepository failed for calss : " +clazz.getName(), e);
+        }
+    }
+
+    public static TypeVariable<?>[] getTypeVariables(Class clazz) {
+        return getClassRepository(clazz).getTypeParameters();
+    }
+
+    public static String[] getGenericTypeNames(Class clazz) {
+        TypeVariable<?>[] typeVariables = getTypeVariables(clazz);
+
+        String[] genericTypeNames = new String[typeVariables.length]; //获取定义的泛型占位符
+        for (int i = 0;i<typeVariables.length;i++){
+            genericTypeNames[i] = typeVariables[i].getName();
+        }
+
+        return genericTypeNames;
+    }
+
+    public static String getGenericSignature(Field field) {
+        try {
+            Method getGenericSignatureMethod = Field.class.getDeclaredMethod("getGenericSignature");
+            getGenericSignatureMethod.setAccessible(true);
+            Object o = getGenericSignatureMethod.invoke(field);
+            if(null == o || !(o instanceof String)) {
+                return null;
+            }
+            return (String)o;
+        } catch (Exception e) {
+            throw new BridgeException("Get genericSignature failed for field : " +field.getName(), e);
+        }
+    }
+
+    public static ClassSignature getClassSignatureTree(ClassRepository classRepository) {
+        try {
+            Method getTreeMethod = AbstractRepository.class.getDeclaredMethod("getTree");
+            getTreeMethod.setAccessible(true);
+            Object o = getTreeMethod.invoke(classRepository);
+            ClassSignature classSignature = (ClassSignature) o;
+            return classSignature;
+        } catch (Exception e) {
+            throw new BridgeException("Get classSignature failed for classRepository : " + classRepository.toString(), e);
+        }
     }
 
 }

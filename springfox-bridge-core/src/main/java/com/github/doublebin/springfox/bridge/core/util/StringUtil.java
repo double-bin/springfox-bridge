@@ -10,6 +10,20 @@ public class StringUtil extends StringUtils
 {
     private static final char SEPARATOR = '_';
 
+    public static int numberOfChar(String str, char c) {
+        if(null == str || 0 == str.length()) {
+            return 0;
+        } else {
+            int number = 0;
+            for (int i = 0; i<str.length(); i++) {
+                if(StringUtils.equals(StringUtils.substring(str,i,i+1), String.valueOf(c))){
+                    number++;
+                }
+            }
+            return number;
+        }
+    }
+
     public static String bytes2HexString(byte buf[])
     {
         if (null == buf || buf.length <= 0)

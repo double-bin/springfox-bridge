@@ -5,13 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javassist.CannotCompileException;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtField;
-import javassist.CtMethod;
-import javassist.Modifier;
-import javassist.NotFoundException;
+import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
+import javassist.*;
 import javassist.bytecode.AnnotationsAttribute;
 import javassist.bytecode.ClassFile;
 import javassist.bytecode.ConstPool;
@@ -41,6 +36,16 @@ public class JavassistUtil {
 
     private static ClassPool pool = ClassPool.getDefault();
 
+    public static void setSuperClassForCtClass(CtClass subCtClass, Class superClass) {
+        try {
+            subCtClass.setSuperclass(pool.get(superClass.getName()));
+            CtClass[] params = new CtClass[]{};
+            CtConstructor ctor = CtNewConstructor.make(params, null, CtNewConstructor.PASS_PARAMS, null, null, subCtClass);
+            subCtClass.addConstructor(ctor);
+        } catch (Exception e) {
+            throw new BridgeException("Set super class failed for class: "+subCtClass.getName(), e);
+        }
+    }
 
     public static void addAnnotationForCtClass(CtClass ctClass, Annotation annotation){
         addAnnotationForCtClass(ctClass,annotation,AnnotationsAttribute.visibleTag);

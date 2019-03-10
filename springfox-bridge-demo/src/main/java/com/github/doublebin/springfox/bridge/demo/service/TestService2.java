@@ -31,18 +31,18 @@ public class TestService2 {
     }
 
     @BridgeOperation(value = "测试查询", notes = "测试查询方法说明")
-    public TestGenericSub<TestResult,String> testQuery1(@BridgeModelProperty(value = "用户id", required = true) long id, @BridgeModelProperty(value = "请求2", required = false) TestRequest1 request){
+    public TestGenericSub<TestResult,CommonResponse<TestResult,String>> testQuery1(@BridgeModelProperty(value = "用户id", required = true) long id, @BridgeModelProperty(value = "请求2", required = false) TestRequest1 request){
         return null;
     }
 
     public static void main(String[] args) throws Exception {
 
-        TestGenericSub<TestResult,String>  sub= new TestGenericSub<TestResult,String>();
+        TestGenericSub<Boolean,String>  sub= new TestGenericSub<Boolean,String>();
 
 
 
 
-        BridgeControllerBuilder.newSubCtClassFromGenericReturnType(TestService2.class.getDeclaredMethod("testQuery1", long.class, TestRequest1.class));
+        BridgeControllerBuilder.newSubClassFromGenericReturnType(TestService2.class.getDeclaredMethod("testQuery1", long.class, TestRequest1.class));
 
        /* TestGeneric<String> generic = new TestGeneric<String>("aaa", "bbb");
         TestGenericSub sub1 = new TestGenericSub();

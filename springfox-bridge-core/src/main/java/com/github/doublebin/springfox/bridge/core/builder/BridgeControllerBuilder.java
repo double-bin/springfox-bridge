@@ -1,24 +1,20 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOperation;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
-import com.github.doublebin.springfox.bridge.core.util.ArrayUtil;
+import com.github.doublebin.springfox.bridge.core.handler.GenericSubClassHandler;
 import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModel;
@@ -28,9 +24,7 @@ import javassist.bytecode.*;
 import javassist.bytecode.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -39,20 +33,13 @@ import com.github.doublebin.springfox.bridge.core.util.ReflectUtil;
 import com.github.doublebin.springfox.bridge.core.util.StringUtil;
 import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
-import sun.reflect.generics.repository.ClassRepository;
 
 @Slf4j
 public class BridgeControllerBuilder {
 
-    private static ConcurrentHashMap<String, AtomicInteger> classNameMap = new ConcurrentHashMap<String, AtomicInteger>();
-
     private static ConcurrentHashMap<String, AtomicInteger> methodNameMap = new ConcurrentHashMap<String, AtomicInteger>();
 
     private static String classFilePath = FileUtil.getCurrentFilePath();
-
-    private static final String NEW_CLASS_NAME_PRE = "bridge.controllers.Bridge";
-
-    private static final String NEW_SUB_CLASS_NAME_PRE = "bridge.model.sub.";
 
     private static final ClassPool pool = ClassPool.getDefault();
 
@@ -60,7 +47,7 @@ public class BridgeControllerBuilder {
 
         if (ReflectUtil.hasAnnotationAtClass(oldClass, BridgeApi.class)) {
 
-            CtClass newControllerCtClass = pool.makeClass(buildNewClassName(oldClass));
+            CtClass newControllerCtClass = pool.makeClass(BridgeClassNameBuilder.buildNewClassName(BridgeClassNameBuilder.NEW_CONTROLLER_CLASS_NAME_PRE, oldClass.getSimpleName()));
 
             try {
                 CtField beanCtField = addAndGetBeanField(oldClass, newControllerCtClass);
@@ -104,8 +91,8 @@ public class BridgeControllerBuilder {
             Class returnType = method.getReturnType();
             Parameter[] parameters = method.getParameters();
 
-            CtClass newSubCtClass = newSubCtClassFromGenericReturnType(method);
-            if (null == newSubCtClass) {
+            Class newSubClass = newSubClassFromGenericReturnType(method);
+            if (null == newSubClass) {
 
                 CtMethod newCtMethod = new CtMethod(pool.get(returnType.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
@@ -128,13 +115,6 @@ public class BridgeControllerBuilder {
                 newControllerCtClass.addMethod(newCtMethod);
                 return newCtMethod;
             } else {
-                ConstPool constpool = newSubCtClass.getClassFile().getConstPool();
-                Annotation apiModelAnnotation = new Annotation(ApiModel.class.getName(), constpool);
-                apiModelAnnotation.addMemberValue("value", new StringMemberValue(returnType.getSimpleName(), constpool));
-                JavassistUtil.addAnnotationForCtClass(newSubCtClass, apiModelAnnotation);
-                newSubCtClass.writeFile(classFilePath);
-
-                Class newSubClass = newSubCtClass.toClass();
 
                 CtMethod newCtMethod = new CtMethod(pool.get(newSubClass.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
@@ -287,36 +267,7 @@ public class BridgeControllerBuilder {
         ccFile.addAttribute(classAttr);
     }
 
-    private static String buildNewClassName(Class oldClass) {
-        String orignClassName = NEW_CLASS_NAME_PRE + oldClass.getSimpleName();
-        return buildNewClassName(orignClassName);
-    }
-
-    private static String buildNewClassName(String orignClassName) {
-        classNameMap.putIfAbsent(orignClassName, new AtomicInteger(0));
-        int count = classNameMap.get(orignClassName).incrementAndGet();
-
-        String newClassName = orignClassName;
-        if (count > 1) {
-            newClassName = orignClassName + (count - 1);
-        }
-
-        return newClassName;
-    }
-
-    public static void getAllFieldsIncludeSuper(List<Field> allFields, Class clazz) {
-        Field[] fields =  clazz.getDeclaredFields();
-        allFields.addAll(Arrays.asList(fields));
-
-        Class superClass = clazz.getSuperclass();
-        if(null == superClass || superClass.equals(Object.class)){
-            return;
-        }
-        getAllFieldsIncludeSuper(allFields,superClass);
-
-    }
-
-    public static CtClass newSubCtClassFromGenericReturnType(Method method) {
+    public static Class newSubClassFromGenericReturnType(Method method) {
         Type type = method.getGenericReturnType();
 
         System.out.println(method.getName());
@@ -330,69 +281,12 @@ public class BridgeControllerBuilder {
             return null;
         } else {
             try {
-                String newSubClassName = buildNewClassName(NEW_SUB_CLASS_NAME_PRE + parameterizedType.getRawType().getSimpleName() + "Sub");
-                CtClass newReturnCtClass = pool.makeClass(newSubClassName);
-                newReturnCtClass.setSuperclass(pool.get(parameterizedType.getRawType().getName()));
-                //newReturnCtClass.setGenericSignature(new SignatureAttribute.TypeVariable(parameterizedType.getTypeName()).encode());
-                CtClass[] params = new CtClass[]{};
-                CtConstructor ctor = CtNewConstructor.make(params, null, CtNewConstructor.PASS_PARAMS, null, null, newReturnCtClass);
-                newReturnCtClass.addConstructor(ctor);
-
-                Class returnClass = method.getReturnType();
-
-                Method getGenericInfoMethod = Class.class.getDeclaredMethod("getGenericInfo");
-                getGenericInfoMethod.setAccessible(true);
-                ClassRepository classRepository = (ClassRepository)getGenericInfoMethod.invoke(returnClass);
-                TypeVariable<?>[] typeVariables = classRepository.getTypeParameters();
-
-                String[] genericTypeNames = new String[typeVariables.length]; //获取定义的泛型占位符
-                Map<String ,Field> genericTypeFieldMap = new HashMap<String,Field>();
-                for (int i = 0;i<typeVariables.length;i++){
-                    genericTypeNames[i] = typeVariables[i].getName();
-                }
-
-
-                List<Field> allFields = new ArrayList<Field>();
-                getAllFieldsIncludeSuper(allFields, returnClass);
-                if (!CollectionUtils.isEmpty(allFields)) {
-                    for (Field field: allFields) {
-                       Method getGenericSignatureMethod = Field.class.getDeclaredMethod("getGenericSignature");
-                        getGenericSignatureMethod.setAccessible(true);
-                        Object o =  getGenericSignatureMethod.invoke(field);
-                        if(null == o) {
-                            continue;
-                        }
-                        String genericSignature = (String)o;
-
-                        String genericFilterName = StringUtils.substring(genericSignature, 1, genericSignature.length()-1);
-                        if (genericTypeFieldMap.containsKey(genericFilterName)) {
-                            continue;
-                        }
-                        genericTypeFieldMap.put(genericFilterName, field);
-
-                        System.out.println(field);
-                    }
-                }
-
-                Map<String, Method> genericTypeGetterMap = new HashMap<>();
-
-
-
-                Method[] methods = returnClass.getMethods();//获取所有public方法,包括父类的
-                if(ArrayUtils.isNotEmpty(methods)){
-                    for (Method publicMethod: methods){
-                        System.out.println(publicMethod);
-                    }
-                }
-
-
+                Class newReturnCtClass = new GenericSubClassHandler().buildSubClass(parameterizedType, method.getReturnType().getSimpleName());
                 return newReturnCtClass;
             } catch ( Exception e) {
                 log.error("New generic's sub class for old class [{}] failed.", parameterizedType.getRawType().getName(), e);
                 throw new BridgeException("New generic's sub class failed", e);
             }
-
-
         }
     }
 

@@ -21,10 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class BridgeRequestBuilder {
 
-    private static ConcurrentHashMap<String, AtomicInteger> classNameMap = new ConcurrentHashMap<String, AtomicInteger>();
-
-    private static final String NEW_CLASS_NAME_PRE = "bridge.model.request.";
-
     private static final ClassPool pool = ClassPool.getDefault();
 
     private static String classFilePath = FileUtil.getCurrentFilePath();
@@ -32,14 +28,8 @@ public class BridgeRequestBuilder {
     public static Class newRequestClass(Method method, String simpleClassName) {
         Parameter[] parameters = method.getParameters();
 
-        String orignClassName = NEW_CLASS_NAME_PRE + simpleClassName;
-        classNameMap.putIfAbsent(orignClassName, new AtomicInteger(0));
-        int count = classNameMap.get(orignClassName).incrementAndGet();
+        String newClassName = BridgeClassNameBuilder.buildNewClassName(BridgeClassNameBuilder.NEW_REQUEST_CLASS_NAME_PRE, simpleClassName);
 
-        String newClassName = orignClassName;
-        if (count > 1) {
-            newClassName = orignClassName + (count - 1);
-        }
 
         try {
 
@@ -101,13 +91,5 @@ public class BridgeRequestBuilder {
         return apiModelAnnotation;
     }
 
-    public static void main(String[] args) {
-        classNameMap.put("a", new AtomicInteger(0));
-        System.out.println(classNameMap.get("a").incrementAndGet());
-        System.out.println(classNameMap.get("a").incrementAndGet());
-        System.out.println(classNameMap.get("a").incrementAndGet());
-        System.out.println(classNameMap.get("a").incrementAndGet());
-        System.out.println(classNameMap.get("a"));
-    }
 
 }

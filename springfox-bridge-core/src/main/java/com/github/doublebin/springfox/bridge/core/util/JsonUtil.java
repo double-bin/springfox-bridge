@@ -73,4 +73,21 @@ public class JsonUtil {
 
     }
 
+    @Deprecated
+    public static void copyValue(Object objectValue, Object orignalValue) {
+        if (null == orignalValue) {
+            objectValue = null;
+            return;
+        }
+
+        if (null == objectValue) {
+            return;
+        }
+
+        String json = writeValueAsString(orignalValue);
+
+        objectValue = readValue(json, objectValue.getClass());
+        System.out.println(objectValue);
+    }
+
 }
