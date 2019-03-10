@@ -281,7 +281,7 @@ public class BridgeControllerBuilder {
             return null;
         } else {
             try {
-                Class newReturnCtClass = new GenericSubClassHandler().buildSubClass(parameterizedType, method.getReturnType().getSimpleName());
+                Class newReturnCtClass = new GenericSubClassHandler().buildSubClass(parameterizedType, null);
                 return newReturnCtClass;
             } catch ( Exception e) {
                 log.error("New generic's sub class for old class [{}] failed.", parameterizedType.getRawType().getName(), e);

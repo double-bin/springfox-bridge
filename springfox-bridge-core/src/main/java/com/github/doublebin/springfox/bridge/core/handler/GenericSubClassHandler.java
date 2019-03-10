@@ -54,6 +54,9 @@ public class GenericSubClassHandler {
 
             ConstPool constpool = newReturnCtClass.getClassFile().getConstPool();
             Annotation apiModelAnnotation = new Annotation(ApiModel.class.getName(), constpool);
+            if(StringUtils.isEmpty(apiModelValue)) {
+                apiModelValue = newSubClassName;
+            }
             apiModelAnnotation.addMemberValue("value", new StringMemberValue(apiModelValue, constpool));
             JavassistUtil.addAnnotationForCtClass(newReturnCtClass, apiModelAnnotation);
             newReturnCtClass.writeFile(classFilePath);
@@ -129,6 +132,15 @@ public class GenericSubClassHandler {
         if (!CollectionUtils.isEmpty(genericClassMap)) {
             Map<String, List<Field>> genericTypeFieldsMap = getGenericTypeFieldsMap(genericInfo.getClazz());
 
+            Map<Field, Class> fieldNewClassMap = getFieldNewClassMap(genericInfo.getClazz(), genericClassMap);
+
+            for (Field field : fieldNewClassMap.keySet()) {
+                if (fieldNameSet.contains(field.getName())) {
+                    continue;
+                }
+                fieldNameSet.add(field.getName());
+                buildFieldInfos(field, fieldNewClassMap.get(field), genericInfo.getClazz(), newReturnCtClass);
+            }
 
             for (String genericTypeName : genericClassMap.keySet()) {
                 Class genericRealClass = genericClassMap.get(genericTypeName);
@@ -156,44 +168,24 @@ public class GenericSubClassHandler {
         buildCtClassFromClass(fieldNameSet, superGenericClassMap, superClass, newReturnCtClass);
     }
 
-    private Map<String, Class> getGenericClassMap(Class oldReturnClass, Class[] genericRealClasses) {
-
-        try {
-            Map<String, Class> genericClassMap = new HashMap<String, Class>();
-
-            if (null == genericRealClasses || genericRealClasses.length == 0) {
-                return genericClassMap;
-            }
-            String[] genericTypeNames = ReflectUtil.getGenericTypeNames(oldReturnClass); //获取定义的泛型占位符, 与genericTypes对应
-
-            for (int i = 0; i < genericTypeNames.length; i++) {
-                genericClassMap.put(genericTypeNames[i], genericRealClasses[i]);
-            }
-
-            return genericClassMap;
-        } catch (Exception e) {
-            throw new BridgeException("Get genericClassMap failed.", e);
-        }
-    }
-
     private Map<String, Class> getGenericClassMap(ParameterizedTypeImpl parameterizedType) {
 
         try {
             Map<String, Class> genericClassMap = new HashMap<String, Class>();
 
             Class oldReturnClass = parameterizedType.getRawType();
-            Type[] genericTypes = parameterizedType.getActualTypeArguments();  //取得包含的泛型类型
+            Type[] genericTypes = parameterizedType.getActualTypeArguments();
             if (null == genericTypes || genericTypes.length == 0) {
                 return genericClassMap;
             }
-            String[] genericTypeNames = ReflectUtil.getGenericTypeNames(oldReturnClass); //获取定义的泛型占位符, 与genericTypes对应
+            String[] genericTypeNames = ReflectUtil.getGenericTypeNames(oldReturnClass);
 
             for (int i = 0; i < genericTypeNames.length; i++) {
                 if (genericTypes[i] instanceof Class) {
                     genericClassMap.put(genericTypeNames[i], (Class) genericTypes[i]);
                 } else if (genericTypes[i] instanceof ParameterizedTypeImpl) {
                     ParameterizedTypeImpl tempParameterizedTypeImpl = (ParameterizedTypeImpl) genericTypes[i];
-                    genericClassMap.put(genericTypeNames[i], buildSubClass(tempParameterizedTypeImpl, tempParameterizedTypeImpl.getRawType().getSimpleName()));
+                    genericClassMap.put(genericTypeNames[i], buildSubClass(tempParameterizedTypeImpl, null));
                 }
 
             }
@@ -256,7 +248,6 @@ public class GenericSubClassHandler {
 
     }
 
-
     private Map<Field, Class> getFieldNewClassMap(Class oldReturnClass, Map<String, Class> genericClassMap) throws Exception {
         Map<Field, Class> fieldNewClassMap = new HashMap<>();
         Field[] fields = oldReturnClass.getDeclaredFields();
@@ -270,13 +261,10 @@ public class GenericSubClassHandler {
                     if (!tuple2.getSnd()) {
                         continue;
                     }
-
                     Class newFiledClass = buildSubClass(genericClassMap,tuple2.getFst() );
                     fieldNewClassMap.put(field, newFiledClass);
                 }
             }
-
-
         }
         return fieldNewClassMap;
     }
@@ -294,7 +282,6 @@ public class GenericSubClassHandler {
                 if (StringUtils.contains(genericSignature, "<")) {
                     continue;
                 }
-                //TODO 此处有问题, 如果属性为CommonResponse<TT, String>这种形式的呢？
                 String genericFilterName = StringUtils.substring(genericSignature, 1, genericSignature.length() - 1);
                 if (genericTypeFieldsMap.containsKey(genericFilterName)) {
                     genericTypeFieldsMap.get(genericFilterName).add(field);
@@ -305,7 +292,6 @@ public class GenericSubClassHandler {
                 }
             }
         }
-
         return genericTypeFieldsMap;
     }
 
@@ -346,7 +332,6 @@ public class GenericSubClassHandler {
         }
 
         Map<String, Class> superGenericClassMap = getGenericClassMap(clazz, genericClassMap);
-
         buildCtClassFromClass(fieldNameSet, superGenericClassMap, superClass, newReturnCtClass);
     }
 
@@ -380,7 +365,6 @@ public class GenericSubClassHandler {
         List<SimpleClassTypeSignature> simpleClassTypeSignatures = classTypeSignature.getPath();
         return simpleClassTypeSignatures;
     }
-
 
     private Class[] getClasses(TypeArgument[] typeArguments, Map<String, Class> genericClassMap) throws ClassNotFoundException {
         Class[] clazzes = new Class[typeArguments.length];
@@ -429,7 +413,6 @@ public class GenericSubClassHandler {
             }
 
             JavassistUtil.addGetterForCtField(ctField);
-
             JavassistUtil.addSetterForCtField(ctField);
         } catch (Exception e) {
             throw new BridgeException("Build field infos failed, field is " + genericField.getName(), e);
@@ -437,12 +420,9 @@ public class GenericSubClassHandler {
 
     }
 
-
     private static Annotation getApiModelPropertyAnnotation(ApiModelProperty apiModelProperty, ConstPool constpool) {
         String[] annotationMethodNames = new String[]{"value", "name", "allowableValues", "access", "notes",
                 "dataType", "required", "position", "hidden", "example", "readOnly", "reference", "allowEmptyValue"};
-
         return JavassistUtil.copyAnnotationValues(apiModelProperty, ApiModelProperty.class, constpool, annotationMethodNames);
     }
-
 }
