@@ -17,6 +17,5 @@ public class SpringfoxBridgeAutoConfiguration implements ApplicationContextAware
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         SpringfoxBridge.start(applicationContext);
-
     }
 }

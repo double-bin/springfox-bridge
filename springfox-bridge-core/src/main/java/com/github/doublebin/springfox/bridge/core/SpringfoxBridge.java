@@ -34,8 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 
 //@EnableSwagger2
 @Slf4j
-public class SpringfoxBridge
-{
+public class SpringfoxBridge {
     private static ApplicationContext applicationContext;
 
     private static DefaultListableBeanFactory defaultListableBeanFactory;
@@ -45,80 +44,86 @@ public class SpringfoxBridge
     private static final String DEFAULT_GROUP = "default";
 
     private static Map<String, List<String>> groupList = new HashMap<String, List<String>>();
-    
-    public static void start(ApplicationContext context) throws BeansException {
-        applicationContext = context;
 
-        ConfigurableApplicationContext configurableApplicationContext = (ConfigurableApplicationContext) applicationContext;
-        defaultListableBeanFactory = (DefaultListableBeanFactory) configurableApplicationContext
-                .getBeanFactory();
-
-        requestMappingHandlerMapping = (RequestMappingHandlerMapping)applicationContext.getBean("requestMappingHandlerMapping");
+    public static void start(ApplicationContext context) {
+        try {
 
 
-        Map<String, Object> beanMap = applicationContext.getBeansOfType(Object.class);
+            applicationContext = context;
 
-        for(String beanName : beanMap.keySet()) {
-            Object bean = beanMap.get(beanName);
-            if(null == bean){
-                continue;
-            }
-            Class clazz = bean.getClass();
-            String clazzName= clazz.getName();
+            ConfigurableApplicationContext configurableApplicationContext = (ConfigurableApplicationContext) applicationContext;
+            defaultListableBeanFactory = (DefaultListableBeanFactory) configurableApplicationContext
+                    .getBeanFactory();
 
-            //某些bean直接不处理
-            if(StringUtil.startsWith(clazzName, "org.spring")){
-                continue;
-            }
+            requestMappingHandlerMapping = (RequestMappingHandlerMapping) applicationContext.getBean("requestMappingHandlerMapping");
 
-            log.info(clazzName);
-            if (ReflectUtil.hasAnnotationAtClass(clazz, BridgeApi.class)){
-                Class newControllerClass = BridgeControllerBuilder.newControllerClass(clazz);
-                registerNewBean(newControllerClass); //注册bean
-                registerRequestMapping(newControllerClass); //注册requestMapping
-                groupNewController(newControllerClass,clazz);
 
-                continue;
-            }
+            Map<String, Object> beanMap = applicationContext.getBeansOfType(Object.class);
 
-            Class superClass = clazz.getSuperclass(); //
-            if(ReflectUtil.hasAnnotationAtClass(superClass, BridgeApi.class)){
-                Class newControllerClass = BridgeControllerBuilder.newControllerClass(superClass);
-                registerNewBean(newControllerClass); //
-                registerRequestMapping(newControllerClass); //
-                groupNewController(newControllerClass,superClass);
-
-                continue;
-            }
-
-            Class<?> interfaces[] = clazz.getInterfaces();
-            Class<?> superInterfaces[] = superClass.getInterfaces();
-            if(ArrayUtils.isEmpty(interfaces) && ArrayUtils.isEmpty(superInterfaces)){
-                continue;
-            }
-
-            for(Class face: interfaces){
-                if(ReflectUtil.hasAnnotationAtClass(face, BridgeApi.class)){
-                    Class newControllerClass = BridgeControllerBuilder.newControllerClass(face);
-                    registerNewBean(newControllerClass); //注册bean
-                    registerRequestMapping(newControllerClass); //注册requestMapping
-                    groupNewController(newControllerClass,face);
+            for (String beanName : beanMap.keySet()) {
+                Object bean = beanMap.get(beanName);
+                if (null == bean) {
+                    continue;
                 }
-            }
+                Class clazz = bean.getClass();
+                String clazzName = clazz.getName();
 
-            for(Class face: superInterfaces){
-                if(ReflectUtil.hasAnnotationAtClass(face, BridgeApi.class)){
-                    Class newControllerClass = BridgeControllerBuilder.newControllerClass(face);
-                    registerNewBean(newControllerClass); //
-                    registerRequestMapping(newControllerClass); //
-                    groupNewController(newControllerClass,face);
+                if (StringUtil.startsWith(clazzName, "org.spring")) {
+                    continue;
                 }
+
+                log.info(clazzName);
+                if (ReflectUtil.hasAnnotationAtClass(clazz, BridgeApi.class)) {
+                    Class newControllerClass = BridgeControllerBuilder.newControllerClass(clazz);
+                    registerNewBean(newControllerClass);
+                    registerRequestMapping(newControllerClass);
+                    groupNewController(newControllerClass, clazz);
+
+                    continue;
+                }
+
+                Class superClass = clazz.getSuperclass();
+                if (ReflectUtil.hasAnnotationAtClass(superClass, BridgeApi.class)) {
+                    Class newControllerClass = BridgeControllerBuilder.newControllerClass(superClass);
+                    registerNewBean(newControllerClass);
+                    registerRequestMapping(newControllerClass);
+                    groupNewController(newControllerClass, superClass);
+
+                    continue;
+                }
+
+                Class<?> interfaces[] = clazz.getInterfaces();
+                Class<?> superInterfaces[] = superClass.getInterfaces();
+                if (ArrayUtils.isEmpty(interfaces) && ArrayUtils.isEmpty(superInterfaces)) {
+                    continue;
+                }
+
+                for (Class face : interfaces) {
+                    if (ReflectUtil.hasAnnotationAtClass(face, BridgeApi.class)) {
+                        Class newControllerClass = BridgeControllerBuilder.newControllerClass(face);
+                        registerNewBean(newControllerClass);
+                        registerRequestMapping(newControllerClass);
+                        groupNewController(newControllerClass, face);
+                    }
+                }
+
+                for (Class face : superInterfaces) {
+                    if (ReflectUtil.hasAnnotationAtClass(face, BridgeApi.class)) {
+                        Class newControllerClass = BridgeControllerBuilder.newControllerClass(face);
+                        registerNewBean(newControllerClass); //
+                        registerRequestMapping(newControllerClass); //
+                        groupNewController(newControllerClass, face);
+                    }
+                }
+
             }
 
-        }
-
-        for(String group: groupList.keySet()){
-            registerGroupDocket(group);
+            for (String group : groupList.keySet()) {
+                registerGroupDocket(group);
+            }
+            log.info("Start springfox-bridge success.");
+        } catch (Exception e) {
+            log.error("Start springfox-bridge failed.", e);
         }
     }
 
@@ -143,8 +148,8 @@ public class SpringfoxBridge
             for (Method method : methods) {
                 if (ReflectUtil.hasAnnotationAtMethod(method, RequestMapping.class)) {
                     try {
-                        RequestMappingInfo mapping_info = (RequestMappingInfo)getMappingForMethod.invoke(
-                            requestMappingHandlerMapping, method, newControllerClass);
+                        RequestMappingInfo mapping_info = (RequestMappingInfo) getMappingForMethod.invoke(
+                                requestMappingHandlerMapping, method, newControllerClass);
                         requestMappingHandlerMapping.registerMapping(mapping_info, newBean, method);
 
                     } catch (Exception e) {
@@ -159,14 +164,14 @@ public class SpringfoxBridge
         }
     }
 
-    private static void registerGroupDocket(String group){
+    private static void registerGroupDocket(String group) {
         List<String> mappingUrls = groupList.get(group);
         String regex = "/(";
         int i = 0;
         int size = mappingUrls.size();
-        for (String mappingUrl: mappingUrls){
+        for (String mappingUrl : mappingUrls) {
             regex += StringUtil.substringAfter(mappingUrl, "/");
-            if(i!=size-1){
+            if (i != size - 1) {
                 regex += "|";
             }
             i++;
@@ -174,20 +179,20 @@ public class SpringfoxBridge
         regex += ")(/.*)*";
 
         Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("【Bridge】" + group)
-            .genericModelSubstitutes(DeferredResult.class)
-            .useDefaultResponseMessages(false)
-            .forCodeGeneration(true)
-            .pathMapping("/")
-            .select()
-            .paths(PathSelectors.regex(regex))
-            .build()
-            .apiInfo(apiInfo(group));
+                .genericModelSubstitutes(DeferredResult.class)
+                .useDefaultResponseMessages(false)
+                .forCodeGeneration(true)
+                .pathMapping("/")
+                .select()
+                .paths(PathSelectors.regex(regex))
+                .build()
+                .apiInfo(apiInfo(group));
 
-        defaultListableBeanFactory.registerSingleton(group+"GroupDocket", docket);
+        defaultListableBeanFactory.registerSingleton(group + "GroupDocket", docket);
     }
 
     private static void groupNewController(Class newControllerClass, Class originalClass) {
-        String[] mappingUrls = (String[])ReflectUtil.getAnnotationValue(newControllerClass, RequestMapping.class, "value");
+        String[] mappingUrls = (String[]) ReflectUtil.getAnnotationValue(newControllerClass, RequestMapping.class, "value");
         if (ArrayUtils.isNotEmpty(mappingUrls)) {
             String mappingUrl = mappingUrls[0];
 
@@ -204,19 +209,18 @@ public class SpringfoxBridge
         }
     }
 
-    private static ApiInfo apiInfo(String group)
-    {
+    private static ApiInfo apiInfo(String group) {
         return new ApiInfoBuilder().title("【Bridge service】" + group)
-            .description("Restful apis for Bridge group : "+ group)
-            .termsOfServiceUrl("http://localhost:8080/swagger-ui.html/")
-            .contact("doublebin") //TODO
-            .version("1.0")
-            .build();
+                .description("Restful apis for Bridge group : " + group)
+                .termsOfServiceUrl("http://localhost:8080/swagger-ui.html/")
+                .contact("doublebin") //TODO
+                .version("1.0")
+                .build();
     }
 
-    private static void addMappingUrlToGroupList(String group, String mappingUrl){
+    private static void addMappingUrlToGroupList(String group, String mappingUrl) {
         List<String> mappingUrls = groupList.get(group);
-        if(null == mappingUrls) {
+        if (null == mappingUrls) {
             mappingUrls = new ArrayList<String>();
             groupList.put(group, mappingUrls);
         }

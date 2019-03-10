@@ -1,12 +1,10 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,7 +15,6 @@ import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import com.github.doublebin.springfox.bridge.core.handler.GenericSubClassHandler;
 import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiOperation;
 import javassist.*;
 import javassist.bytecode.*;
@@ -124,8 +121,7 @@ public class BridgeControllerBuilder {
 
 
 
-                String body = "{return com.github.doublebin.springfox.bridge.core.util.JsonUtil.readValue(com.github.doublebin.springfox.bridge.core.util.JsonUtil.writeValueAsString(" +
-                        "this.bean." + methodName + "(";
+                String body = "{Object orignalValue = this.bean." + methodName + "(";
                 for (int i = 0; i < size; i++) {
 
                     body += ("$1.getParam" + i + "()"); //$1 means the first parameter
@@ -134,11 +130,15 @@ public class BridgeControllerBuilder {
                     }
                 }
 
-                body += "))," +newSubClass.getName()+".class);}";
+                body += ");"
+                        +newSubClass.getName()+" objectValue = new "+newSubClass.getName()+"()"+ ";"
+                        +newSubClass.getName() +"[] objectValues = new "+newSubClass.getName()+"[]{objectValue};"
+                        +"com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalValue, objectValues);"
+                        + "return objectValues[0];"
+                        +"}";
 
-                newCtMethod.setBody("{return new " +newSubClass.getName()+"()"+
-                        ";}");
-
+                //newCtMethod.setBody("{return new " +newSubClass.getName()+"()"+ ";}");
+                newCtMethod.setBody(body);
 
                 newControllerCtClass.addMethod(newCtMethod);
                 return newCtMethod;
@@ -195,7 +195,7 @@ public class BridgeControllerBuilder {
             int count = methodNameMap.get(methodNameIncludeSuffix).incrementAndGet();
 
             if (count > 1) {
-                requestMappingValue += "/" + (count - 1); //去重
+                requestMappingValue += "/" + (count - 1);
             }
         }
 
@@ -275,8 +275,8 @@ public class BridgeControllerBuilder {
         if(! (type instanceof  ParameterizedTypeImpl)) {
             return null;
         }
-        ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) type; //强转成具体的实现类
-        Type[] genericTypes = parameterizedType.getActualTypeArguments();  //取得包含的泛型类型
+        ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) type;
+        Type[] genericTypes = parameterizedType.getActualTypeArguments();
         if (ArrayUtils.isEmpty(genericTypes)) {
             return null;
         } else {
@@ -300,7 +300,7 @@ public class BridgeControllerBuilder {
         try {
             CtField beanCtField = new CtField(pool.get(oldClass.getName()), "bean", newControllerCtClass);
             beanCtField.setModifiers(Modifier.PRIVATE);
-            newControllerCtClass.addField(beanCtField); //添加属性
+            newControllerCtClass.addField(beanCtField);
             return beanCtField;
         } catch (Exception e) {
             log.error("Add bean property failed for new class {}, bean type is {}.", newControllerCtClass.getName(), oldClass.getName(), e);

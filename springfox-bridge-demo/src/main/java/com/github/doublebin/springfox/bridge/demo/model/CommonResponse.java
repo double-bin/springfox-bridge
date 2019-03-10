@@ -14,10 +14,6 @@ import lombok.Setter;
 @ApiModel(description = "通用响应对象")
 public class CommonResponse<TM, S> {
 
-    TM get() {
-        return null;
-    }
-
     @ApiModelProperty(value = "是否成功", required = true)
     private boolean success;
 

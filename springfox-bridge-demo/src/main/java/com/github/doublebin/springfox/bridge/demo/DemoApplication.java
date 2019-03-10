@@ -17,7 +17,7 @@ public class DemoApplication {
         new SpringApplicationBuilder(DemoApplication.class).web(true).run(args);
     }
 
-    @Bean
+    //@Bean
     public Docket createRestApi(@Value("${swagger.pathSelectors.regex:/.*}") String regex)
     {
         return new Docket(DocumentationType.SWAGGER_2).groupName("Needle service")

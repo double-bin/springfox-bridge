@@ -25,7 +25,5 @@ public class TestGeneric<TT, BB, CC> {
 
     private CC desc;
 
-    private CommonResponse<TT, String> ttData;
-
     private CommonResponse<TT, String> tttData;
 }
