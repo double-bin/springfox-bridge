@@ -1,5 +1,6 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
+import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeModelProperty;
 import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.ApiModel;
@@ -22,8 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BridgeRequestBuilder {
 
     private static final ClassPool pool = ClassPool.getDefault();
-
-    private static String classFilePath = FileUtil.getCurrentFilePath();
 
     public static Class newRequestClass(Method method, String simpleClassName) {
         Parameter[] parameters = method.getParameters();
@@ -60,7 +59,7 @@ public class BridgeRequestBuilder {
                 i++;
 
             }
-            newCtClass.writeFile(classFilePath);
+            newCtClass.writeFile(SpringfoxBridge.getBridgeClassFilePath());
 
             return newCtClass.toClass();
 

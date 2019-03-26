@@ -1,6 +1,7 @@
 package com.github.doublebin.springfox.bridge.core.util;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -88,6 +89,38 @@ public class JsonUtil {
                 } else {
                     String json = writeValueAsString(orignalValue);
                     objectValues[i] = readValue(json, objectValues[i].getClass());
+                }
+            }
+        }
+    }
+
+    public static void copyValue( Object orignalValue, Object[][] objectValues) {
+
+        if (null != objectValues && objectValues.length != 0) {
+
+            for (int i= 0; i <objectValues.length; i++ ) {
+
+                if(null == objectValues[i] || null == orignalValue) {
+                    objectValues[i] = null;
+                } else {
+                    String json = writeValueAsString(orignalValue);
+                    objectValues[i] = readValue(json, objectValues[i].getClass());
+                }
+            }
+        }
+    }
+
+    public static void copyValue( Object orignalValue, List objectValues) {
+
+        if (null != objectValues && objectValues.size() != 0) {
+
+            for (int i= 0; i <objectValues.size(); i++ ) {
+
+                if(null == objectValues.get(i) || null == orignalValue) {
+                    objectValues.set(i, orignalValue);
+                } else {
+                    String json = writeValueAsString(orignalValue);
+                    objectValues.set(i, readValue(json, objectValues.get(i).getClass()));
                 }
             }
         }

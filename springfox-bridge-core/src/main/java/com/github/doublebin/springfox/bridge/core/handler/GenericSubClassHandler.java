@@ -29,9 +29,8 @@ import sun.reflect.generics.tree.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-@Getter
-@Setter
-@NoArgsConstructor
+
+@Deprecated
 @Slf4j
 public class GenericSubClassHandler {
     private static final ClassPool pool = ClassPool.getDefault();

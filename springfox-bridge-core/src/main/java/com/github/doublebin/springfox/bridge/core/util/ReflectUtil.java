@@ -2,15 +2,14 @@ package com.github.doublebin.springfox.bridge.core.util;
 
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.TypeVariable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import lombok.extern.slf4j.Slf4j;
@@ -59,15 +58,15 @@ public class ReflectUtil
     }
 
 
-    public static Method getMethod(String fullMethodName, Object[] args, boolean isIgnorePrimitive)
+    public static Method getDeclaredMethod(String fullMethodName, Object[] args, boolean isIgnorePrimitive)
     {
-        return getMethod(getMethods(fullMethodName), args, isIgnorePrimitive);
+        return getDeclaredMethod(getMethods(fullMethodName), args, isIgnorePrimitive);
     }
 
 
-    public static Method getMethod(String fullMethodName, Object[] args)
+    public static Method getDeclaredMethod(String fullMethodName, Object[] args)
     {
-        return getMethod(getMethods(fullMethodName), args, true);
+        return getDeclaredMethod(getMethods(fullMethodName), args, true);
     }
 
 
@@ -97,7 +96,7 @@ public class ReflectUtil
         return false;
     }
 
-    private static Method getMethod(List<Method> methods, Object[] args, boolean isIgnorePrimitive)
+    private static Method getDeclaredMethod(List<Method> methods, Object[] args, boolean isIgnorePrimitive)
     {
         List<Class<?>> clazzes = getClassList(args);
 
@@ -299,6 +298,48 @@ public class ReflectUtil
 
     }
 
+    public static Method getDeclaredMethod(Class clazz, String methodName, Class<?>... parameterTypes) {
+        try {
+            return clazz.getDeclaredMethod(methodName, parameterTypes);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Method getMethod(Class clazz, String methodName, Class<?>... parameterTypes) {
+        try {
+            return clazz.getMethod(methodName, parameterTypes);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Field getDeclaredField(Class clazz, String fieldName) {
+        try {
+            return clazz.getDeclaredField(fieldName);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static <T extends Annotation> T getAnnotation(Method method, Class<T> annotationClass) {
+        try {
+            return method.getAnnotation(annotationClass);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static <T extends Annotation> T getAnnotation(Field field, Class<T> annotationClass) {
+        try {
+            return field.getAnnotation(annotationClass);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
+
     public static Class<? extends java.lang.annotation.Annotation> getAnnotation(Object o) {
         if (null == o) {
             return null;
@@ -336,11 +377,21 @@ public class ReflectUtil
     }
 
     public static TypeVariable<?>[] getTypeVariables(Class clazz) {
-        return getClassRepository(clazz).getTypeParameters();
+
+        ClassRepository classRepository = getClassRepository(clazz);
+        if (null == classRepository) {
+            return null;
+        }
+        return classRepository.getTypeParameters();
     }
 
     public static String[] getGenericTypeNames(Class clazz) {
         TypeVariable<?>[] typeVariables = getTypeVariables(clazz);
+
+        if (null == typeVariables) {
+            return null;
+        }
+
 
         String[] genericTypeNames = new String[typeVariables.length]; //获取定义的泛型占位符
         for (int i = 0;i<typeVariables.length;i++){
@@ -366,6 +417,9 @@ public class ReflectUtil
 
     public static ClassSignature getClassSignatureTree(ClassRepository classRepository) {
         try {
+            if (null == classRepository) {
+                return null;
+            }
             Method getTreeMethod = AbstractRepository.class.getDeclaredMethod("getTree");
             getTreeMethod.setAccessible(true);
             Object o = getTreeMethod.invoke(classRepository);
@@ -373,6 +427,20 @@ public class ReflectUtil
             return classSignature;
         } catch (Exception e) {
             throw new BridgeException("Get classSignature failed for classRepository : " + classRepository.toString(), e);
+        }
+    }
+
+    public static Class getArrayClass(Class clazz) {
+        String className = clazz.getName();
+        if (StringUtils.startsWith(className,"[")) {
+            className = "[" + className;
+        } else {
+            className = "[L" +className+";";
+        }
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new BridgeException("Get arrayClass failed for class : " + clazz.getName(), e);
         }
     }
 

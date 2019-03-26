@@ -5,7 +5,7 @@
 
     <groupId>com.github.double-bin</groupId>
     <artifactId>springfox-bridge-parent</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>springfox-bridge-parent</name>
@@ -36,7 +36,7 @@
         <java.version>1.8</java.version>
         <org.springframework.version>4.3.19.RELEASE</org.springframework.version>
         <springfox.version>2.7.0</springfox.version>
-        <springfox-bridge.version>1.0.2</springfox-bridge.version>
+        <springfox-bridge.version>1.0.3-SNAPSHOT</springfox-bridge.version>
     </properties>
 
     <modules>
@@ -102,6 +102,12 @@
             </dependency>
 
             <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.4</version>
+            </dependency>
+
+            <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>3.1.0</version>
@@ -112,6 +118,13 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>2.8.11.3</version>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/commons-beanutils/commons-beanutils -->
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>1.9.3</version>
             </dependency>
 
             <dependency>

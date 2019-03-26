@@ -3,17 +3,15 @@ package com.github.doublebin.springfox.bridge.core.builder;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOperation;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
-import com.github.doublebin.springfox.bridge.core.handler.GenericSubClassHandler;
-import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import javassist.*;
@@ -21,6 +19,7 @@ import javassist.bytecode.*;
 import javassist.bytecode.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,14 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.doublebin.springfox.bridge.core.util.ReflectUtil;
 import com.github.doublebin.springfox.bridge.core.util.StringUtil;
 import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 @Slf4j
 public class BridgeControllerBuilder {
 
     private static ConcurrentHashMap<String, AtomicInteger> methodNameMap = new ConcurrentHashMap<String, AtomicInteger>();
 
-    private static String classFilePath = FileUtil.getCurrentFilePath();
+    //private static String classFilePath = FileUtil.getCurrentFilePath();
 
     private static final ClassPool pool = ClassPool.getDefault();
 
@@ -68,7 +66,7 @@ public class BridgeControllerBuilder {
 
                 addAnnotationsAtClass(newControllerCtClass, oldClass);
 
-                newControllerCtClass.writeFile(classFilePath);
+                newControllerCtClass.writeFile(SpringfoxBridge.getBridgeClassFilePath());
                 return newControllerCtClass.toClass();
 
             } catch (CannotCompileException | IOException e) {
@@ -88,8 +86,8 @@ public class BridgeControllerBuilder {
             Class returnType = method.getReturnType();
             Parameter[] parameters = method.getParameters();
 
-            Class newSubClass = newSubClassFromGenericReturnType(method);
-            if (null == newSubClass) {
+            Class newReplaceClass = BridgeGenericReplaceBuilder.buildReplaceClass(method.getGenericReturnType(), null);
+            if (returnType.equals(newReplaceClass)) {
 
                 CtMethod newCtMethod = new CtMethod(pool.get(returnType.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
@@ -113,13 +111,11 @@ public class BridgeControllerBuilder {
                 return newCtMethod;
             } else {
 
-                CtMethod newCtMethod = new CtMethod(pool.get(newSubClass.getName()), methodName,
+                CtMethod newCtMethod = new CtMethod(pool.get(newReplaceClass.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
                 newCtMethod.setModifiers(Modifier.PUBLIC);
 
                 int size = parameters.length;
-
-
 
                 String body = "{Object orignalValue = this.bean." + methodName + "(";
                 for (int i = 0; i < size; i++) {
@@ -131,15 +127,13 @@ public class BridgeControllerBuilder {
                 }
 
                 body += ");"
-                        +newSubClass.getName()+" objectValue = new "+newSubClass.getName()+"()"+ ";"
-                        +newSubClass.getName() +"[] objectValues = new "+newSubClass.getName()+"[]{objectValue};"
+                        + getObjectCreateBody(newReplaceClass, "objectValue")
+                        + getArrayCreateBody(newReplaceClass, "objectValues", "objectValue")
                         +"com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalValue, objectValues);"
                         + "return objectValues[0];"
                         +"}";
 
-                //newCtMethod.setBody("{return new " +newSubClass.getName()+"()"+ ";}");
                 newCtMethod.setBody(body);
-
                 newControllerCtClass.addMethod(newCtMethod);
                 return newCtMethod;
             }
@@ -149,6 +143,40 @@ public class BridgeControllerBuilder {
             throw new BridgeException("Add new homonymic method failed.", e);
         }
     }
+
+    private static String getClassBodyName(Class clazz) {
+        String className = clazz.getName();
+        if (!StringUtils.startsWith(className, "[")) {
+            return className;
+        } else {
+            int count = StringUtils.lastIndexOf(className,"[") + 1;
+            String classBodyName = StringUtils.substring(className,count+1,className.length()-1);
+            for (int i = 0; i<count;i++){
+                classBodyName += "[]";
+            }
+
+            return classBodyName;
+        }
+    }
+
+    private static String getObjectCreateBody(Class clazz, String objectName) {
+        String classBodyName = getClassBodyName(clazz);
+        String body = classBodyName +" " + objectName +" = new ";
+        if (StringUtils.endsWith(classBodyName, "[]")){
+            String tempInitName = StringUtils.replaceFirst(classBodyName, "\\x5B+?", "[1");
+            return body + tempInitName + ";";
+        } else {
+            return body + classBodyName + "();";
+        }
+    }
+
+    private static String getArrayCreateBody(Class baseClass, String arrayName, String initObjectName) {
+        Class arrayClass = ReflectUtil.getArrayClass(baseClass);
+        String body = getObjectCreateBody(arrayClass, arrayName) +arrayName+"[0]="+ initObjectName +";";
+
+        return body;
+    }
+
 
     private static void addAnnotationsAtMethod(CtMethod newCtMethod, Method method) {
         ConstPool constpool = newCtMethod.getDeclaringClass().getClassFile().getConstPool();
@@ -265,29 +293,6 @@ public class BridgeControllerBuilder {
         classAttr.addAnnotation(requestMappingAnnotation);
 
         ccFile.addAttribute(classAttr);
-    }
-
-    public static Class newSubClassFromGenericReturnType(Method method) {
-        Type type = method.getGenericReturnType();
-
-        System.out.println(method.getName());
-
-        if(! (type instanceof  ParameterizedTypeImpl)) {
-            return null;
-        }
-        ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) type;
-        Type[] genericTypes = parameterizedType.getActualTypeArguments();
-        if (ArrayUtils.isEmpty(genericTypes)) {
-            return null;
-        } else {
-            try {
-                Class newReturnCtClass = new GenericSubClassHandler().buildSubClass(parameterizedType, null);
-                return newReturnCtClass;
-            } catch ( Exception e) {
-                log.error("New generic's sub class for old class [{}] failed.", parameterizedType.getRawType().getName(), e);
-                throw new BridgeException("New generic's sub class failed", e);
-            }
-        }
     }
 
     private static void addAutowiredAnnotationAtField(CtField beanCtField) {

@@ -4,6 +4,8 @@ import com.github.doublebin.springfox.bridge.core.builder.BridgeControllerBuilde
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeGroup;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
+import com.github.doublebin.springfox.bridge.core.util.FileUtil;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -23,6 +25,8 @@ import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,10 +48,20 @@ public class SpringfoxBridge {
 
     private static Map<String, List<String>> groupList = new HashMap<String, List<String>>();
 
+    private static String bridgeClassFilePath = FileUtil.getCurrentFilePath() + File.separator + "bridge-classes";
+
+    public static void initPath() {
+        FileUtils.deleteQuietly(new File(bridgeClassFilePath));
+        try {
+            FileUtils.forceMkdir(new File(bridgeClassFilePath));
+        } catch (IOException e) {
+            throw new BridgeException("Init bridge-classes directory failed.", e);
+        }
+    }
+
     public static void start(ApplicationContext context) {
         try {
-
-
+            initPath();
             applicationContext = context;
 
             ConfigurableApplicationContext configurableApplicationContext = (ConfigurableApplicationContext) applicationContext;
@@ -225,6 +239,15 @@ public class SpringfoxBridge {
         }
         mappingUrls.add(mappingUrl);
     }
+
+    public static String getBridgeClassFilePath() {
+        return bridgeClassFilePath;
+    }
+
+    public static void setBridgeClassFilePath(String bridgeClassFilePath) {
+        SpringfoxBridge.bridgeClassFilePath = bridgeClassFilePath;
+    }
+
 }
 
 
