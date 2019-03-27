@@ -68,8 +68,6 @@ public class StringUtil extends StringUtils
             return null;
         }
 
-        //s = s.toLowerCase();
-
         StringBuilder sb = new StringBuilder(s.length());
         boolean upperCase = false;
 
@@ -139,23 +137,4 @@ public class StringUtil extends StringUtils
 
         return sb.toString();
     }
-
-    public static void main(String[] args) {
-        String a = "HelloWord";
-        System.out.println(toCamelCase(a));
-        System.out.println(toCapitalizeCamelCase(a));
-        String b = "Hello_Word";
-        System.out.println(toCamelCase(b));
-        System.out.println(toCapitalizeCamelCase(b));
-        String c = "hello_word";
-        System.out.println(toCamelCase(c));
-        System.out.println(toCapitalizeCamelCase(c));
-
-        System.out.println(toUnderScoreCase(a));
-        System.out.println(toUnderScoreCase(b));
-        System.out.println(toUnderScoreCase(c));
-        System.out.println(toUnderScoreCase("helloWOrd"));
-        System.out.println(toCamelCase(toUnderScoreCase("helloWOrd")));
-    }
-
 }

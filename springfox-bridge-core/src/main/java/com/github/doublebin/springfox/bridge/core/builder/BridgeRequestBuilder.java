@@ -12,6 +12,7 @@ import javassist.bytecode.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -27,11 +28,13 @@ public class BridgeRequestBuilder {
     public static Class newRequestClass(Method method, String simpleClassName) {
         Parameter[] parameters = method.getParameters();
 
+        if (ArrayUtils.isEmpty(parameters)) {
+            return null;
+        }
+
         String newClassName = BridgeClassNameBuilder.buildNewClassName(BridgeClassNameBuilder.NEW_REQUEST_CLASS_NAME_PRE, simpleClassName);
 
-
         try {
-
             CtClass newCtClass = pool.makeClass(newClassName);
 
             ClassFile ccFile = newCtClass.getClassFile();
@@ -47,7 +50,7 @@ public class BridgeRequestBuilder {
 
                 CtField ctField = new CtField(pool.get(parameterClass.getName()), "param" + i, newCtClass); //
                 ctField.setModifiers(Modifier.PRIVATE);
-                newCtClass.addField(ctField); //添加属性
+                newCtClass.addField(ctField);
 
                 Annotation apiModelParopertyAnnotation = getApiModelPropertyAnnotation(parameter, constpool);
                 JavassistUtil.addAnnotationForCtField(ctField, apiModelParopertyAnnotation);
@@ -57,7 +60,6 @@ public class BridgeRequestBuilder {
                 JavassistUtil.addSetterForCtField(ctField);
 
                 i++;
-
             }
             newCtClass.writeFile(SpringfoxBridge.getBridgeClassFilePath());
 
@@ -85,8 +87,7 @@ public class BridgeRequestBuilder {
 
     private static Annotation getApiModelAnnotation(ConstPool constpool) {
         Annotation apiModelAnnotation = new Annotation(ApiModel.class.getName(), constpool);
-        apiModelAnnotation.addMemberValue("description",
-            new StringMemberValue("Assembled request class, desc.", constpool)); //TODO D
+        apiModelAnnotation.addMemberValue("description", new StringMemberValue("Assembled request class, desc.", constpool));
         return apiModelAnnotation;
     }
 

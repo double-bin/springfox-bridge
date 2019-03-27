@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 指定某个类进行swagger桥接
+ * mark class for building controller class with annotation: io.swagger.annotations.Api
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -28,8 +28,6 @@ public @interface BridgeApi {
     String consumes() default "";
 
     String protocols() default "";
-
-    /*Authorization[] authorizations() default @Authorization(value = "");*/
 
     boolean hidden() default false;
 

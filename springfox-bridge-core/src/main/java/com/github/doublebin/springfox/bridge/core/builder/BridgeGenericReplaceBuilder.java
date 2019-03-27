@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
-import com.github.doublebin.springfox.bridge.core.builder.BridgeClassNameBuilder;
 import com.github.doublebin.springfox.bridge.core.component.tuple.Tuple2;
 import com.github.doublebin.springfox.bridge.core.component.tuple.Tuple3;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
@@ -164,7 +163,8 @@ public class BridgeGenericReplaceBuilder {
 
             return newReplaceClass;
         } catch (Exception e) {
-            throw new BridgeException("build class failed for " + genericClass.getName(), e);
+            log.error("Build class failed for generic class : {}.", genericClass.getName(), e);
+            throw new BridgeException("Build class failed for " + genericClass.getName(), e);
         }
 
     }
@@ -212,6 +212,8 @@ public class BridgeGenericReplaceBuilder {
             JavassistUtil.addGetterForCtField(ctField);
             JavassistUtil.addSetterForCtField(ctField);
         } catch (Exception e) {
+            String error = String.format("Build field info for ctClass [{}] failed, fieldName is [{}].", newReturnCtClass.getName(), fieldName);
+            log.error(error, e);
             throw new BridgeException("Build field info failed, field is " + fieldName, e);
         }
 
@@ -235,11 +237,8 @@ public class BridgeGenericReplaceBuilder {
 
             Type type = readMethod.getGenericReturnType();
 
-            System.out.println(type.getClass().getName());
-
             if (type instanceof Class) {
                 tupleMap.put(name, new Tuple3<Class, ApiModelProperty, Method>((Class)type, null, readMethod));
-
             } else {
                 tupleMap.put(name, new Tuple3<Class, ApiModelProperty, Method>(null, null, readMethod));
             }
@@ -288,6 +287,7 @@ public class BridgeGenericReplaceBuilder {
             return newGenericClassMap;
 
         } catch (Exception e) {
+            log.error("Get genericClassMap failed for genericInfo, genericInfo : {}.", genericInfo.getClazz().getName(), e);
             throw new BridgeException("Get genericClassMap failed.", e);
         }
     }
@@ -333,7 +333,7 @@ public class BridgeGenericReplaceBuilder {
             Object result = Object.class;
             if (ArrayUtils.isEmpty(lowerBounds) && ArrayUtils.isNotEmpty(upperBounds)) {
                 Type upperBound = upperBounds[0];
-                result = getGenericInfoFeature(upperBound);//递归
+                result = getGenericInfoFeature(upperBound);
             } else if (ArrayUtils.isNotEmpty(lowerBounds)) {
                 result = Object.class;
             }
@@ -573,7 +573,8 @@ public class BridgeGenericReplaceBuilder {
             genericInfo.setFeatures(features);
             return genericInfo;
         } catch (Exception e) {
-            throw new BridgeException("getGenericInfo failed.", e);
+            log.error("Get genericInfo failed for simpleClassTypeSignature : {}.", simpleClassTypeSignature.getName(), e);
+            throw new BridgeException("Get genericInfo failed.", e);
         }
 
     }

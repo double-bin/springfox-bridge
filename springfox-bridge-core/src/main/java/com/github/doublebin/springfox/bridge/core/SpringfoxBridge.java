@@ -3,10 +3,13 @@ package com.github.doublebin.springfox.bridge.core;
 import com.github.doublebin.springfox.bridge.core.builder.BridgeControllerBuilder;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeGroup;
+import com.github.doublebin.springfox.bridge.core.component.tuple.Tuple2;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import com.github.doublebin.springfox.bridge.core.util.FileUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
@@ -30,12 +33,13 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.extern.slf4j.Slf4j;
 
-//@EnableSwagger2
 @Slf4j
 public class SpringfoxBridge {
     private static ApplicationContext applicationContext;
@@ -46,7 +50,12 @@ public class SpringfoxBridge {
 
     private static final String DEFAULT_GROUP = "default";
 
-    private static Map<String, List<String>> groupList = new HashMap<String, List<String>>();
+    //private static Map<String, List<String>> groupList = new HashMap<String, List<String>>();
+
+    /**
+     * <gourpName:<version:<fst: mapUrls, snd: autors>>>
+     */
+    private static Map<String, Tuple2<List<String>, Set<String>>> groupInfos= new HashMap<>();
 
     private static String bridgeClassFilePath = FileUtil.getCurrentFilePath() + File.separator + "bridge-classes";
 
@@ -131,7 +140,7 @@ public class SpringfoxBridge {
 
             }
 
-            for (String group : groupList.keySet()) {
+            for (String group : groupInfos.keySet()) {
                 registerGroupDocket(group);
             }
             log.info("Start springfox-bridge success.");
@@ -178,7 +187,10 @@ public class SpringfoxBridge {
     }
 
     private static void registerGroupDocket(String group) {
-        List<String> mappingUrls = groupList.get(group);
+
+        Tuple2<List<String>, Set<String>> tuple2 = groupInfos.get(group);
+        List<String> mappingUrls = tuple2.getFst();
+        Set<String> autors = tuple2.getSnd();
         String regex = "/(";
         int i = 0;
         int size = mappingUrls.size();
@@ -192,16 +204,17 @@ public class SpringfoxBridge {
         regex += ")(/.*)*";
 
         Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("【Bridge】" + group)
-                .genericModelSubstitutes(DeferredResult.class)
-                .useDefaultResponseMessages(false)
-                .forCodeGeneration(true)
-                .pathMapping("/")
-                .select()
-                .paths(PathSelectors.regex(regex))
-                .build()
-                .apiInfo(apiInfo(group));
+            .genericModelSubstitutes(DeferredResult.class)
+            .useDefaultResponseMessages(false)
+            .forCodeGeneration(true)
+            .pathMapping("/")
+            .select()
+            .paths(PathSelectors.regex(regex))
+            .build()
+            .apiInfo(apiInfo(group, autors));
 
         defaultListableBeanFactory.registerSingleton(group + "GroupDocket", docket);
+
     }
 
     private static void groupNewController(Class newControllerClass, Class originalClass) {
@@ -210,34 +223,71 @@ public class SpringfoxBridge {
             String mappingUrl = mappingUrls[0];
 
             if (ReflectUtil.hasAnnotationAtClass(originalClass, BridgeGroup.class)) {
-                String groupName = ReflectUtil.getAnnotationValue(originalClass, BridgeGroup.class, "value").toString();
-                if (StringUtil.isBlank(groupName)) {
-                    addMappingUrlToGroupList(DEFAULT_GROUP, mappingUrl);
-                } else {
-                    addMappingUrlToGroupList(groupName, mappingUrl);
-                }
+                String groupName = (String)ReflectUtil.getAnnotationValue(originalClass, BridgeGroup.class, "value");
+                String[] groupAuthors = (String[])ReflectUtil.getAnnotationValue(originalClass, BridgeGroup.class, "authors");
+
+                addGroupInfos(groupName, groupAuthors, mappingUrl);
             } else {
-                addMappingUrlToGroupList(DEFAULT_GROUP, mappingUrl);
+                addGroupInfos(DEFAULT_GROUP, null, mappingUrl);
             }
         }
     }
 
-    private static ApiInfo apiInfo(String group) {
+    private static ApiInfo apiInfo(String group, Set<String> authors) {
+        String author = "springfox-bridge";
+        if (CollectionUtils.isNotEmpty(authors)) {
+            int i = 0;
+            for (String s : authors) {
+                if (0 == i) {
+                    author = s;
+                } else if(StringUtils.isNotBlank(s)){
+                    author += ", " + s;
+                }
+                i++;
+            }
+        }
+
+
         return new ApiInfoBuilder().title("【Bridge service】" + group)
                 .description("Restful apis for Bridge group : " + group)
-                .termsOfServiceUrl("http://localhost:8080/swagger-ui.html/")
-                .contact("doublebin") //TODO
-                .version("1.0")
+                .contact(author)
+                .version(null)
                 .build();
     }
 
-    private static void addMappingUrlToGroupList(String group, String mappingUrl) {
-        List<String> mappingUrls = groupList.get(group);
-        if (null == mappingUrls) {
-            mappingUrls = new ArrayList<String>();
-            groupList.put(group, mappingUrls);
+    private static void addGroupInfos(String groupName, String[] groupAuthors, String mappingUrl) {
+
+        if (StringUtils.isBlank(groupName)) {
+            groupName = DEFAULT_GROUP;
+        }
+
+        Tuple2<List<String>, Set<String>> tuple2 = groupInfos.get(groupName);
+        if (null == tuple2) {
+            tuple2 = new Tuple2<>();
+            groupInfos.put(groupName, tuple2);
+        }
+
+        List<String> mappingUrls = tuple2.getFst();
+        if(null == mappingUrls) {
+            mappingUrls = new ArrayList<>();
+            tuple2.setFst(mappingUrls);
         }
         mappingUrls.add(mappingUrl);
+
+        Set<String> autors = tuple2.getSnd();
+        if (null == autors) {
+            autors = new HashSet<>();
+            tuple2.setSnd(autors);
+        }
+
+        if (ArrayUtils.isNotEmpty(groupAuthors)) {
+            for (String groupAuthor : groupAuthors) {
+                if (StringUtils.isNotBlank(groupAuthor)) {
+                    autors.add(StringUtils.trim(groupAuthor));
+                }
+            }
+        }
+
     }
 
     public static String getBridgeClassFilePath() {

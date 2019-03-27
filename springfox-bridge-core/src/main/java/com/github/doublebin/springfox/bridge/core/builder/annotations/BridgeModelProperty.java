@@ -2,6 +2,9 @@ package com.github.doublebin.springfox.bridge.core.builder.annotations;
 
 import java.lang.annotation.*;
 
+/**
+ * mark parameter for building filed in new request class within annotation : io.swagger.annotations.ApiModelProperty
+ */
 @Target({ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

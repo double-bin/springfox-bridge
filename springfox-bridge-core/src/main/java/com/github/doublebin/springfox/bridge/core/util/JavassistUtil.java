@@ -127,7 +127,7 @@ public class JavassistUtil {
                 continue;
             }
 
-            if (Objects.equals(AnnotationUtils.getDefaultValue(oldAnnotationClass, annotationMethodName), value)){
+            if (equalsAnnotationValue(AnnotationUtils.getDefaultValue(oldAnnotationClass, annotationMethodName), value)){
                 continue;
             }
 
@@ -135,6 +135,52 @@ public class JavassistUtil {
         }
 
         return newAnnotation;
+    }
+
+    private static boolean equalsAnnotationValue(Object a, Object b) {
+        if (Objects.equals(a, b)) {
+            return true;
+        }
+
+        if (null == a || null == b) {
+            return false;
+        }
+
+        if(a.getClass().isArray() && b.getClass().isArray()) {
+            Object[] as = (Object[])a;
+            Object[] bs = (Object[])b;
+            if (as.length != bs.length) {
+                return false;
+            } else {
+                for (int i = 0; i< as.length; i++) {
+                    if (!equalsAnnotationValue(as[i], bs[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        Class<? extends java.lang.annotation.Annotation> annotationClassA = ReflectUtil.getAnnotation(a);
+        Class<? extends java.lang.annotation.Annotation> annotationClassB = ReflectUtil.getAnnotation(b);
+        if (null!= annotationClassA && Objects.equals(annotationClassA, annotationClassB)) {
+            Method[] methods = annotationClassA.getMethods();
+            if (ArrayUtils.isEmpty(methods)) {
+                return true;
+            }
+
+            for (Method method : methods) {
+                String methodName = method.getName();
+                Object oa = ReflectUtil.invokeMethod(a, methodName);
+                Object ob = ReflectUtil.invokeMethod(a, methodName);
+                if (!equalsAnnotationValue(oa, ob)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return false;
     }
 
     public static Annotation copyAnnotationValues(Class oldClass, Class<? extends java.lang.annotation.Annotation> oldAnnotationClass, Class<? extends java.lang.annotation.Annotation> newAnnotationClass, ConstPool constpool, String... annotationMethodNames) {

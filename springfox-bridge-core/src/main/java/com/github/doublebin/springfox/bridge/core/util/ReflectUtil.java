@@ -1,6 +1,5 @@
 package com.github.doublebin.springfox.bridge.core.util;
 
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -21,74 +20,53 @@ import sun.reflect.generics.repository.ClassRepository;
 import sun.reflect.generics.tree.ClassSignature;
 
 @Slf4j
-public class ReflectUtil
-{
-    public static Class<?> getClass(Object object, boolean turnToExist)
-    {
-        if (turnToExist)
-        {
+public class ReflectUtil {
+    public static Class<?> getClass(Object object, boolean turnToExist) {
+        if (turnToExist) {
             String className = object.getClass().getName();
-            try
-            {
+            try {
                 return Class.forName(className);
-            }
-            catch (java.lang.ClassNotFoundException e)
-            {
+            } catch (java.lang.ClassNotFoundException e) {
                 throw new BridgeException("Class not found.", e);
             }
         }
         return object.getClass();
     }
 
-    public static List<Method> getMethods(String fullMethodName)
-    {
+    public static List<Method> getMethods(String fullMethodName) {
         String methodName = StringUtils.substringAfterLast(fullMethodName, ".");
         Class<?> clazz = getClass(fullMethodName);
 
         List<Method> methods = new ArrayList<Method>();
         Method[] allMethods = clazz.getMethods();
-        for (Method method : allMethods)
-        {
-            if (method.getName().equals(methodName))
-            {
+        for (Method method : allMethods) {
+            if (method.getName().equals(methodName)) {
                 methods.add(method);
             }
         }
         return methods;
     }
 
-
-    public static Method getDeclaredMethod(String fullMethodName, Object[] args, boolean isIgnorePrimitive)
-    {
+    public static Method getDeclaredMethod(String fullMethodName, Object[] args, boolean isIgnorePrimitive) {
         return getDeclaredMethod(getMethods(fullMethodName), args, isIgnorePrimitive);
     }
 
-
-    public static Method getDeclaredMethod(String fullMethodName, Object[] args)
-    {
+    public static Method getDeclaredMethod(String fullMethodName, Object[] args) {
         return getDeclaredMethod(getMethods(fullMethodName), args, true);
     }
 
-
-    public static Class<?> getClass(String fullMethodName)
-    {
+    public static Class<?> getClass(String fullMethodName) {
         String className = StringUtils.substringBeforeLast(fullMethodName, ".");
-        try
-        {
+        try {
             return Class.forName(className);
-        }
-        catch (java.lang.ClassNotFoundException e)
-        {
+        } catch (java.lang.ClassNotFoundException e) {
             throw new BridgeException("Class not found.", e);
         }
     }
 
-    public static boolean hasNull(Object[] args)
-    {
-        for (Object arg : args)
-        {
-            if (null == arg)
-            {
+    public static boolean hasNull(Object[] args) {
+        for (Object arg : args) {
+            if (null == arg) {
                 return true;
             }
         }
@@ -96,46 +74,35 @@ public class ReflectUtil
         return false;
     }
 
-    private static Method getDeclaredMethod(List<Method> methods, Object[] args, boolean isIgnorePrimitive)
-    {
+    private static Method getDeclaredMethod(List<Method> methods, Object[] args, boolean isIgnorePrimitive) {
         List<Class<?>> clazzes = getClassList(args);
 
-        for (Method method : methods)
-        {
+        for (Method method : methods) {
             Class<?>[] parameterTypes = method.getParameterTypes();
-            if (parameterTypes.length != clazzes.size())
-            {
+            if (parameterTypes.length != clazzes.size()) {
                 continue;
             }
             boolean isEqual = true;
-            for (int i = 0; i < parameterTypes.length; i++)
-            {
+            for (int i = 0; i < parameterTypes.length; i++) {
                 Class<?> clazz = clazzes.get(i);
                 Class<?> parameterType = parameterTypes[i];
 
                 boolean isAssignable = true;
 
-                if (isIgnorePrimitive)
-                {
+                if (isIgnorePrimitive) {
                     isAssignable = ClassUtils.isAssignable(clazz, parameterType);
-                }
-                else
-                {
+                } else {
                     isAssignable = parameterType.isAssignableFrom(clazz);
                 }
-                if (null == clazz || isAssignable)
-                {
+                if (null == clazz || isAssignable) {
                     continue;
-                }
-                else
-                {
+                } else {
                     isEqual = false;
                     break;
                 }
             }
 
-            if (isEqual)
-            {
+            if (isEqual) {
                 return method;
             }
         }
@@ -143,14 +110,11 @@ public class ReflectUtil
         return null;
     }
 
-    public static List<Class<?>> getClassList(Object[] args)
-    {
+    public static List<Class<?>> getClassList(Object[] args) {
         List<Class<?>> clazzes = new ArrayList<Class<?>>();
-        for (Object arg : args)
-        {
+        for (Object arg : args) {
             Class<?> clazz = null;
-            if (null != arg)
-            {
+            if (null != arg) {
                 clazz = arg.getClass();
             }
             clazzes.add(clazz);
@@ -159,13 +123,10 @@ public class ReflectUtil
         return clazzes;
     }
 
-    public static Class<?>[] getClassArray(Object[] args)
-    {
+    public static Class<?>[] getClassArray(Object[] args) {
         Class<?>[] classes = new Class<?>[args.length];
-        for (int i = 0; i < args.length; i++)
-        {
-            if (null == args[i])
-            {
+        for (int i = 0; i < args.length; i++) {
+            if (null == args[i]) {
                 classes[i] = null;
             }
             classes[i] = args[i].getClass();
@@ -174,21 +135,16 @@ public class ReflectUtil
     }
 
     public static <T extends Annotation> List<Object> getParamsByAnnotation(Method method, Object[] args,
-                                                                            Class<T> annotationClass)
-    {
+                                                                            Class<T> annotationClass) {
         List<Object> pathParams = new ArrayList<Object>();
         Annotation[][] allParamAnnotations = method.getParameterAnnotations();
-        if (allParamAnnotations.length == 0)
-        {
+        if (allParamAnnotations.length == 0) {
             return pathParams;
         }
         int paramIndex = 0;
-        for (Annotation[] annotations : allParamAnnotations)
-        {
-            for (Annotation annotation : annotations)
-            {
-                if (annotation.annotationType().equals(annotationClass))
-                {
+        for (Annotation[] annotations : allParamAnnotations) {
+            for (Annotation annotation : annotations) {
+                if (annotation.annotationType().equals(annotationClass)) {
                     pathParams.add(args[paramIndex]);
                     break;
                 }
@@ -207,87 +163,89 @@ public class ReflectUtil
     }
 
     public static <T extends Annotation> Object getAnnotationValue(Method method, Class<T> annotationClass,
-                                                                   String annotationMethodName)
-    {
-        if (method.isAnnotationPresent(annotationClass))
-        {
+                                                                   String annotationMethodName) {
+        if (method.isAnnotationPresent(annotationClass)) {
             Annotation annotation = method.getAnnotation(annotationClass);
-            try
-            {
+            try {
                 return annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation);
-            }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-                    | SecurityException e)
-            {
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
+                NoSuchMethodException
+                | SecurityException e) {
                 throw new BridgeException(MessageFormat.format(
-                        "Get annotation value at method [{0}] failed, annotation name is [{1}], annotation method is [{2}].",
-                        method.getName(),
-                        annotationClass.getName(),
-                        annotationMethodName), e);
+                    "Get annotation value at method [{0}] failed, annotation name is [{1}], annotation method is "
+                        + "[{2}].",
+                    method.getName(),
+                    annotationClass.getName(),
+                    annotationMethodName), e);
             }
-        }
-        else
-        {
+        } else {
             return null;
         }
     }
 
     public static <T extends Annotation> Object getAnnotationValue(Class<?> clazz, Class<T> annotationClass,
-                                                                   String annotationMethodName)
-    {
-        if (clazz.isAnnotationPresent(annotationClass))
-        {
+                                                                   String annotationMethodName) {
+        if (clazz.isAnnotationPresent(annotationClass)) {
             Annotation annotation = clazz.getAnnotation(annotationClass);
-            try
-            {
+            try {
                 return annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation);
-            }
-            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-                    | SecurityException e)
-            {
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
+                NoSuchMethodException
+                | SecurityException e) {
                 log.error(
-                        "Get annotation value at class [{}] failed, annotation name is [{}], annotation method is [{}].",
-                        clazz.getName(),
-                        annotationClass.getName(),
-                        annotationMethodName,
-                        e);
+                    "Get annotation value at class [{}] failed, annotation name is [{}], annotation method is [{}].",
+                    clazz.getName(),
+                    annotationClass.getName(),
+                    annotationMethodName,
+                    e);
                 throw new BridgeException(e);
             }
-        }
-        else
-        {
+        } else {
             return null;
         }
     }
 
-    public static <T extends Annotation> List<Object> getAnnotationValuesByParams(Method method, Class<T> annotationClass, String annotationMethodName)
-    {
+    public static <T extends Annotation> Object invokeMethod(Object object, String methodName) {
+        try {
+            if (null == object) {
+                throw new BridgeException("Invoke method failed, object is null.");
+            }
+            return object.getClass().getDeclaredMethod(methodName).invoke(object);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
+            NoSuchMethodException
+            | SecurityException e) {
+            log.error(
+                "Invoke method failed, object class is [{}], method is [{}].",
+                object.getClass().getName(),
+                methodName,
+                e);
+            throw new BridgeException("Invoke method failed.", e);
+        }
+    }
 
+    public static <T extends Annotation> List<Object> getAnnotationValuesByParams(Method method,
+                                                                                  Class<T> annotationClass,
+                                                                                  String annotationMethodName) {
         List<Object> annotationValues = new ArrayList<Object>();
         Annotation[][] allParamAnnotations = method.getParameterAnnotations();
-        if (allParamAnnotations.length == 0)
-        {
+        if (allParamAnnotations.length == 0) {
             return annotationValues;
         }
-        for (Annotation[] annotations : allParamAnnotations)
-        {
-            for (Annotation annotation : annotations)
-            {
-                if (annotation.annotationType().equals(annotationClass))
-                {
-                    try
-                    {
-                        annotationValues.add(annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation));
-                    }
-                    catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                            | NoSuchMethodException | SecurityException e)
-                    {
+        for (Annotation[] annotations : allParamAnnotations) {
+            for (Annotation annotation : annotations) {
+                if (annotation.annotationType().equals(annotationClass)) {
+                    try {
+                        annotationValues.add(
+                            annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation));
+                    } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                        | NoSuchMethodException | SecurityException e) {
                         log.error(
-                                "Get annotation values at Method [{}] failed, annotation name is [{}], annotation method is [{}].",
-                                method.getName(),
-                                annotationClass.getName(),
-                                annotationMethodName,
-                                e);
+                            "Get annotation values at Method [{}] failed, annotation name is [{}], annotation method "
+                                + "is [{}].",
+                            method.getName(),
+                            annotationClass.getName(),
+                            annotationMethodName,
+                            e);
                         throw new BridgeException(e);
                     }
                     break;
@@ -338,8 +296,6 @@ public class ReflectUtil
         }
     }
 
-
-
     public static Class<? extends java.lang.annotation.Annotation> getAnnotation(Object o) {
         if (null == o) {
             return null;
@@ -360,7 +316,7 @@ public class ReflectUtil
     }
 
     public static boolean isAnnotationObject(Object o) {
-        if(null == getAnnotation(o)) {
+        if (null == getAnnotation(o)) {
             return false;
         }
         return true;
@@ -372,7 +328,7 @@ public class ReflectUtil
             getGenericInfoMethod.setAccessible(true);
             return (ClassRepository)getGenericInfoMethod.invoke(clazz);
         } catch (Exception e) {
-            throw new BridgeException("Get ClassRepository failed for calss : " +clazz.getName(), e);
+            throw new BridgeException("Get ClassRepository failed for calss : " + clazz.getName(), e);
         }
     }
 
@@ -392,9 +348,8 @@ public class ReflectUtil
             return null;
         }
 
-
         String[] genericTypeNames = new String[typeVariables.length]; //获取定义的泛型占位符
-        for (int i = 0;i<typeVariables.length;i++){
+        for (int i = 0; i < typeVariables.length; i++) {
             genericTypeNames[i] = typeVariables[i].getName();
         }
 
@@ -406,12 +361,12 @@ public class ReflectUtil
             Method getGenericSignatureMethod = Field.class.getDeclaredMethod("getGenericSignature");
             getGenericSignatureMethod.setAccessible(true);
             Object o = getGenericSignatureMethod.invoke(field);
-            if(null == o || !(o instanceof String)) {
+            if (null == o || !(o instanceof String)) {
                 return null;
             }
             return (String)o;
         } catch (Exception e) {
-            throw new BridgeException("Get genericSignature failed for field : " +field.getName(), e);
+            throw new BridgeException("Get genericSignature failed for field : " + field.getName(), e);
         }
     }
 
@@ -423,19 +378,20 @@ public class ReflectUtil
             Method getTreeMethod = AbstractRepository.class.getDeclaredMethod("getTree");
             getTreeMethod.setAccessible(true);
             Object o = getTreeMethod.invoke(classRepository);
-            ClassSignature classSignature = (ClassSignature) o;
+            ClassSignature classSignature = (ClassSignature)o;
             return classSignature;
         } catch (Exception e) {
-            throw new BridgeException("Get classSignature failed for classRepository : " + classRepository.toString(), e);
+            throw new BridgeException("Get classSignature failed for classRepository : " + classRepository.toString(),
+                e);
         }
     }
 
     public static Class getArrayClass(Class clazz) {
         String className = clazz.getName();
-        if (StringUtils.startsWith(className,"[")) {
+        if (StringUtils.startsWith(className, "[")) {
             className = "[" + className;
         } else {
-            className = "[L" +className+";";
+            className = "[L" + className + ";";
         }
         try {
             return Class.forName(className);

@@ -2,7 +2,6 @@ package com.github.doublebin.springfox.bridge.core.util;
 
 import java.io.File;
 
-import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import org.apache.commons.io.FileUtils;
 
 public class FileUtil {
@@ -16,9 +15,4 @@ public class FileUtil {
         return currentFilePath;
     }
 
-    public static void main(String[] args) throws Exception {
-        String classFilePath = FileUtil.getCurrentFilePath() + File.separator + "bridge-classes";
-        FileUtils.deleteQuietly(new File(classFilePath));
-        FileUtils.forceMkdir(new File(classFilePath));
-    }
 }

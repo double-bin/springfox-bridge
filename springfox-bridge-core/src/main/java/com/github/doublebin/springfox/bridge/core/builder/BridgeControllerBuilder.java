@@ -60,7 +60,9 @@ public class BridgeControllerBuilder {
 
                         addAnnotationsAtMethod(newCtMethod, method);
 
-                        addAnnotationsAtMethodParameters(newCtMethod);
+                        if (null != requestBodyClass) {
+                            addAnnotationsAtMethodParameters(newCtMethod);
+                        }
                     }
                 }
 
@@ -314,7 +316,4 @@ public class BridgeControllerBuilder {
 
     }
 
-    public static void main(String[] args) throws Exception {
-
-    }
 }
