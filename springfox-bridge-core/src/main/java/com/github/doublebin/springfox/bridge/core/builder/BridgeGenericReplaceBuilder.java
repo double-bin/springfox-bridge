@@ -35,10 +35,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
-import sun.reflect.generics.reflectiveObjects.GenericArrayTypeImpl;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
-import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
-import sun.reflect.generics.reflectiveObjects.WildcardTypeImpl;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import sun.reflect.generics.repository.ClassRepository;
 import sun.reflect.generics.tree.ArrayTypeSignature;
 import sun.reflect.generics.tree.ClassSignature;
@@ -58,11 +58,11 @@ public class BridgeGenericReplaceBuilder {
         if (null == type) {
             return null;
         }
-        if (type instanceof  ParameterizedTypeImpl) {
-            GenericInfo genericInfo = getGenericInfo((ParameterizedTypeImpl)type);
+        if (type instanceof  ParameterizedType) {
+            GenericInfo genericInfo = getGenericInfo((ParameterizedType)type);
             return buildGenericClass(genericInfo, genericClassMap);
-        } else if (type instanceof GenericArrayTypeImpl) {
-            GenericArrayInfo genericArrayInfo = getGenericArrayInfo((GenericArrayTypeImpl)type);
+        } else if (type instanceof GenericArrayType) {
+            GenericArrayInfo genericArrayInfo = getGenericArrayInfo((GenericArrayType)type);
             return buildGenericArrayClass(genericArrayInfo, genericClassMap);
         } else if (type instanceof Class) {
             return (Class)type;
@@ -298,10 +298,10 @@ public class BridgeGenericReplaceBuilder {
      * @param parameterizedType
      * @return
      */
-    public static GenericInfo getGenericInfo(ParameterizedTypeImpl parameterizedType) {
+    public static GenericInfo getGenericInfo(ParameterizedType parameterizedType) {
 
         GenericInfo genericInfo = new GenericInfo();
-        genericInfo.setClazz(parameterizedType.getRawType());
+        genericInfo.setClazz((Class)parameterizedType.getRawType());
         List features = new ArrayList<>();
 
         Type[] types = parameterizedType.getActualTypeArguments();
@@ -316,17 +316,17 @@ public class BridgeGenericReplaceBuilder {
 
 
     private static Object getGenericInfoFeature(Type type) {
-        if (type instanceof TypeVariableImpl) {
-            return ((TypeVariableImpl)type).getName();
-        } else if (type instanceof ParameterizedTypeImpl) {
-            return getGenericInfo((ParameterizedTypeImpl)type);
+        if (type instanceof TypeVariable) {
+            return ((TypeVariable)type).getName();
+        } else if (type instanceof ParameterizedType) {
+            return getGenericInfo((ParameterizedType)type);
         } else if (type instanceof Class) {
             return type;
-        } else if (type instanceof GenericArrayTypeImpl) {
-            GenericArrayTypeImpl genericArrayType = (GenericArrayTypeImpl)type;
+        } else if (type instanceof GenericArrayType) {
+            GenericArrayType genericArrayType = (GenericArrayType)type;
             return getGenericArrayInfo(genericArrayType);
-        } else if (type instanceof WildcardTypeImpl) {
-            WildcardTypeImpl wildcardType = (WildcardTypeImpl)type;
+        } else if (type instanceof WildcardType) {
+            WildcardType wildcardType = (WildcardType)type;
             Type[] upperBounds = wildcardType.getUpperBounds();
             Type[] lowerBounds = wildcardType.getLowerBounds();
 
@@ -350,7 +350,7 @@ public class BridgeGenericReplaceBuilder {
      * @param genericArrayType
      * @return
      */
-    public static GenericArrayInfo getGenericArrayInfo(GenericArrayTypeImpl genericArrayType) {
+    public static GenericArrayInfo getGenericArrayInfo(GenericArrayType genericArrayType) {
         Type type = genericArrayType.getGenericComponentType();
 
         GenericArrayInfo genericArrayInfo = new GenericArrayInfo();
@@ -384,15 +384,15 @@ public class BridgeGenericReplaceBuilder {
 
                 if (null == tuple3.getFst() && null != readMethod) {
                     Type genericReturnType = readMethod.getGenericReturnType();
-                    if (genericReturnType instanceof ParameterizedTypeImpl) {
-                        ParameterizedTypeImpl tempParameterizedTypeImpl = (ParameterizedTypeImpl)genericReturnType;
-                        GenericInfo genericInfo = getGenericInfo(tempParameterizedTypeImpl);
+                    if (genericReturnType instanceof ParameterizedType) {
+                        ParameterizedType tempParameterizedType = (ParameterizedType)genericReturnType;
+                        GenericInfo genericInfo = getGenericInfo(tempParameterizedType);
                         tuple3.setFst(buildGenericClass(genericInfo, genericClassMap));
-                    } else if (genericReturnType instanceof GenericArrayTypeImpl) {
-                        GenericArrayInfo genericArrayInfo = getGenericArrayInfo((GenericArrayTypeImpl)genericReturnType);
+                    } else if (genericReturnType instanceof GenericArrayType) {
+                        GenericArrayInfo genericArrayInfo = getGenericArrayInfo((GenericArrayType)genericReturnType);
                         tuple3.setFst(buildGenericArrayClass(genericArrayInfo, genericClassMap));
-                    } else if (genericReturnType instanceof TypeVariableImpl) {
-                        String name = ((TypeVariableImpl)genericReturnType).getName();
+                    } else if (genericReturnType instanceof TypeVariable) {
+                        String name = ((TypeVariable)genericReturnType).getName();
                         Class clazz = null == genericClassMap ? Object.class : genericClassMap.get(name);
                         clazz = null == clazz ? Object.class : clazz;
                         tuple3.setFst(clazz);
