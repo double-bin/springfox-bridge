@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.double-bin</groupId>
         <artifactId>springfox-bridge-parent</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3</version>
     </parent>
 
     <artifactId>springfox-bridge-demo</artifactId>

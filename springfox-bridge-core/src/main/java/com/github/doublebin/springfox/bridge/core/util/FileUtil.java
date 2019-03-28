@@ -2,8 +2,6 @@ package com.github.doublebin.springfox.bridge.core.util;
 
 import java.io.File;
 
-import org.apache.commons.io.FileUtils;
-
 public class FileUtil {
     private static String currentFilePath = "";
 

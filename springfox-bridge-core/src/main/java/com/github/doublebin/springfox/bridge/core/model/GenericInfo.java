@@ -16,7 +16,8 @@ public class GenericInfo {
     private Class clazz;
 
     /**
-     * 三种情况:1:string,泛型名;2,Class:具体类(包含具体的数组类);3,GenericInfo:GenericInfo对象;GenericArrayInfo:泛型数组
+     *
+     * four types:1: string,generic name; 2,Class: concrete class (including array class); 3,GenericInfo: GenericInfo object; 4,GenericArrayInfo: GenericArrayInfo object
      */
     private List features;
 }

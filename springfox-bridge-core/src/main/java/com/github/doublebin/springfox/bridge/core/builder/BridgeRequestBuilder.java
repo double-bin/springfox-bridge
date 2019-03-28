@@ -2,7 +2,6 @@ package com.github.doublebin.springfox.bridge.core.builder;
 
 import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeModelProperty;
-import com.github.doublebin.springfox.bridge.core.util.FileUtil;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import javassist.*;
@@ -16,9 +15,6 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class BridgeRequestBuilder {
