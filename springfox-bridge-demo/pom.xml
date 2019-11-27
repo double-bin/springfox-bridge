@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.github.double-bin</groupId>
         <artifactId>springfox-bridge-parent</artifactId>
-        <version>1.0.3</version>
+        <version>1.0.4</version>
     </parent>
 
     <artifactId>springfox-bridge-demo</artifactId>
@@ -16,6 +16,7 @@
     <description>springfox-bridge-demo</description>
 
     <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <org.springframework.boot.version>1.5.3.RELEASE</org.springframework.boot.version>

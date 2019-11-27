@@ -21,10 +21,7 @@ import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
 import com.github.doublebin.springfox.bridge.core.util.ReflectUtil;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtField;
-import javassist.Modifier;
+import javassist.*;
 import javassist.bytecode.ConstPool;
 import javassist.bytecode.annotation.Annotation;
 import javassist.bytecode.annotation.StringMemberValue;
@@ -199,6 +196,7 @@ public class BridgeGenericReplaceBuilder {
             if (null == fieldClass) {
                 fieldClass = Object.class;
             }
+            pool.insertClassPath(new ClassClassPath(fieldClass));
             CtField ctField = new CtField(pool.get(fieldClass.getName()), fieldName, newReturnCtClass);
             ctField.setModifiers(Modifier.PRIVATE);
             newReturnCtClass.addField(ctField);

@@ -91,6 +91,8 @@ public class BridgeControllerBuilder {
             Class newReplaceClass = BridgeGenericReplaceBuilder.buildReplaceClass(method.getGenericReturnType(), null);
             if (returnType.equals(newReplaceClass)) {
 
+                pool.insertClassPath(new ClassClassPath(returnType));
+                pool.insertClassPath(new ClassClassPath(requestBodyClass));
                 CtMethod newCtMethod = new CtMethod(pool.get(returnType.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
                 newCtMethod.setModifiers(Modifier.PUBLIC);
@@ -112,6 +114,9 @@ public class BridgeControllerBuilder {
                 newControllerCtClass.addMethod(newCtMethod);
                 return newCtMethod;
             } else {
+
+                pool.insertClassPath(new ClassClassPath(newReplaceClass));
+                pool.insertClassPath(new ClassClassPath(requestBodyClass));
 
                 CtMethod newCtMethod = new CtMethod(pool.get(newReplaceClass.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
@@ -305,6 +310,7 @@ public class BridgeControllerBuilder {
 
     private static CtField addAndGetBeanField(Class oldClass, CtClass newControllerCtClass) {
         try {
+            pool.insertClassPath(new ClassClassPath(oldClass));
             CtField beanCtField = new CtField(pool.get(oldClass.getName()), "bean", newControllerCtClass);
             beanCtField.setModifiers(Modifier.PRIVATE);
             newControllerCtClass.addField(beanCtField);

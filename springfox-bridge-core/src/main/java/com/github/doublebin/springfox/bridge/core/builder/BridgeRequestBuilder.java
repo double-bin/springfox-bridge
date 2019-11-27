@@ -44,6 +44,7 @@ public class BridgeRequestBuilder {
                 Annotation apiModelAnnotation = getApiModelAnnotation(constpool);
                 JavassistUtil.addAnnotationForCtClass(newCtClass, apiModelAnnotation);
 
+                pool.insertClassPath(new ClassClassPath(parameterClass));
                 CtField ctField = new CtField(pool.get(parameterClass.getName()), "param" + i, newCtClass); //
                 ctField.setModifiers(Modifier.PRIVATE);
                 newCtClass.addField(ctField);
