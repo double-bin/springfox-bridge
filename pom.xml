@@ -5,7 +5,7 @@
 
     <groupId>com.github.double-bin</groupId>
     <artifactId>springfox-bridge-parent</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <packaging>pom</packaging>
 
     <name>springfox-bridge-parent</name>
@@ -36,7 +36,7 @@
         <java.version>1.8</java.version>
         <org.springframework.version>4.3.19.RELEASE</org.springframework.version>
         <springfox.version>2.7.0</springfox.version>
-        <springfox-bridge.version>1.0.5</springfox-bridge.version>
+        <springfox-bridge.version>1.0.6</springfox-bridge.version>
     </properties>
 
     <modules>

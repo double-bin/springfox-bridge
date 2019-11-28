@@ -24,7 +24,7 @@ public class ReflectUtil {
         if (turnToExist) {
             String className = object.getClass().getName();
             try {
-                return Class.forName(className);
+                return Class.forName(className, true, object.getClass().getClassLoader());
             } catch (java.lang.ClassNotFoundException e) {
                 throw new BridgeException("Class not found.", e);
             }
@@ -393,7 +393,7 @@ public class ReflectUtil {
             className = "[L" + className + ";";
         }
         try {
-            return Class.forName(className);
+            return Class.forName(className, true, clazz.getClassLoader());
         } catch (ClassNotFoundException e) {
             throw new BridgeException("Get arrayClass failed for class : " + clazz.getName(), e);
         }
