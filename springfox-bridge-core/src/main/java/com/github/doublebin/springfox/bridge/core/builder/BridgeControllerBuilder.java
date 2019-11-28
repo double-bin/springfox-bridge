@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOperation;
+import com.github.doublebin.springfox.bridge.core.component.tuple.Tuple2;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -54,13 +55,13 @@ public class BridgeControllerBuilder {
                     if (ReflectUtil.hasAnnotationAtMethod(method, BridgeOperation.class)) {
                         String methodName = method.getName();
 
-                        Class requestBodyClass = BridgeRequestBuilder.newRequestClass(method, oldClass.getSimpleName() + StringUtil.toCapitalizeCamelCase(methodName) + "Request");
+                        Tuple2<Class, Boolean> requestBodyClassTuple = BridgeRequestBuilder.newRequestClass(method, oldClass.getSimpleName() + StringUtil.toCapitalizeCamelCase(methodName) + "Request");
 
-                        CtMethod newCtMethod = addAndGetHomonymicMethod(method, newControllerCtClass, requestBodyClass);
+                        CtMethod newCtMethod = addAndGetHomonymicMethod(method, newControllerCtClass, requestBodyClassTuple);
 
                         addAnnotationsAtMethod(newCtMethod, method);
 
-                        if (null != requestBodyClass) {
+                        if (null != requestBodyClassTuple.getFst()) {
                             addAnnotationsAtMethodParameters(newCtMethod);
                         }
                     }
@@ -82,8 +83,14 @@ public class BridgeControllerBuilder {
     }
 
 
-    private static CtMethod addAndGetHomonymicMethod(Method method, CtClass newControllerCtClass, Class requestBodyClass) {
+    private static CtMethod addAndGetHomonymicMethod(Method method, CtClass newControllerCtClass, Tuple2<Class, Boolean> requestBodyClassTuple) {
         try {
+            Class requestBodyClass = null;
+            boolean isOrignalClass = false;
+            if (null != requestBodyClassTuple) {
+                requestBodyClass = requestBodyClassTuple.getFst();
+                isOrignalClass = requestBodyClassTuple.getSnd();
+            }
             String methodName = method.getName();
             Class returnType = method.getReturnType();
             Parameter[] parameters = method.getParameters();
@@ -92,7 +99,9 @@ public class BridgeControllerBuilder {
             if (returnType.equals(newReplaceClass)) {
 
                 pool.insertClassPath(new ClassClassPath(returnType));
-                pool.insertClassPath(new ClassClassPath(requestBodyClass));
+                if (null != requestBodyClass) {
+                    pool.insertClassPath(new ClassClassPath(requestBodyClass));
+                }
                 CtMethod newCtMethod = new CtMethod(pool.get(returnType.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
                 newCtMethod.setModifiers(Modifier.PUBLIC);
@@ -100,11 +109,18 @@ public class BridgeControllerBuilder {
                 int size = parameters.length;
 
                 String body = "{return this.bean." + methodName + "(";
-                for (int i = 0; i < size; i++) {
 
-                    body += ("$1.getParam" + i + "()"); //$1 means the first parameter
-                    if (i != size - 1) {
-                        body += ",";
+                if (isOrignalClass) {
+
+                    body += ("$1"); //$1 means the first parameter
+                } else {
+
+                    for (int i = 0; i < size; i++) {
+
+                        body += ("$1.getParam" + i + "()"); //$1 means the first parameter
+                        if (i != size - 1) {
+                            body += ",";
+                        }
                     }
                 }
 
@@ -116,8 +132,9 @@ public class BridgeControllerBuilder {
             } else {
 
                 pool.insertClassPath(new ClassClassPath(newReplaceClass));
-                pool.insertClassPath(new ClassClassPath(requestBodyClass));
-
+                if (null != requestBodyClass) {
+                    pool.insertClassPath(new ClassClassPath(requestBodyClass));
+                }
                 CtMethod newCtMethod = new CtMethod(pool.get(newReplaceClass.getName()), methodName,
                         null == requestBodyClass ? new CtClass[]{} : new CtClass[]{pool.get(requestBodyClass.getName())}, newControllerCtClass);
                 newCtMethod.setModifiers(Modifier.PUBLIC);
@@ -136,9 +153,9 @@ public class BridgeControllerBuilder {
                 body += ");"
                         + getObjectCreateBody(newReplaceClass, "objectValue")
                         + getArrayCreateBody(newReplaceClass, "objectValues", "objectValue")
-                        +"com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalValue, objectValues);"
+                        + "com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalValue, objectValues);"
                         + "return objectValues[0];"
-                        +"}";
+                        + "}";
 
                 newCtMethod.setBody(body);
                 newControllerCtClass.addMethod(newCtMethod);
@@ -156,9 +173,9 @@ public class BridgeControllerBuilder {
         if (!StringUtils.startsWith(className, "[")) {
             return className;
         } else {
-            int count = StringUtils.lastIndexOf(className,"[") + 1;
-            String classBodyName = StringUtils.substring(className,count+1,className.length()-1);
-            for (int i = 0; i<count;i++){
+            int count = StringUtils.lastIndexOf(className, "[") + 1;
+            String classBodyName = StringUtils.substring(className, count + 1, className.length() - 1);
+            for (int i = 0; i < count; i++) {
                 classBodyName += "[]";
             }
 
@@ -168,8 +185,8 @@ public class BridgeControllerBuilder {
 
     private static String getObjectCreateBody(Class clazz, String objectName) {
         String classBodyName = getClassBodyName(clazz);
-        String body = classBodyName +" " + objectName +" = new ";
-        if (StringUtils.endsWith(classBodyName, "[]")){
+        String body = classBodyName + " " + objectName + " = new ";
+        if (StringUtils.endsWith(classBodyName, "[]")) {
             String tempInitName = StringUtils.replaceFirst(classBodyName, "\\x5B+?", "[1");
             return body + tempInitName + ";";
         } else {
@@ -179,7 +196,7 @@ public class BridgeControllerBuilder {
 
     private static String getArrayCreateBody(Class baseClass, String arrayName, String initObjectName) {
         Class arrayClass = ReflectUtil.getArrayClass(baseClass);
-        String body = getObjectCreateBody(arrayClass, arrayName) +arrayName+"[0]="+ initObjectName +";";
+        String body = getObjectCreateBody(arrayClass, arrayName) + arrayName + "[0]=" + initObjectName + ";";
 
         return body;
     }

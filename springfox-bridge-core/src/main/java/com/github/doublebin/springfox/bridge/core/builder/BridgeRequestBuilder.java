@@ -2,6 +2,7 @@ package com.github.doublebin.springfox.bridge.core.builder;
 
 import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeModelProperty;
+import com.github.doublebin.springfox.bridge.core.component.tuple.Tuple2;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import javassist.*;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
 import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -21,11 +23,15 @@ public class BridgeRequestBuilder {
 
     private static final ClassPool pool = ClassPool.getDefault();
 
-    public static Class newRequestClass(Method method, String simpleClassName) {
+    public static Tuple2<Class, Boolean> newRequestClass(Method method, String simpleClassName) {
         Parameter[] parameters = method.getParameters();
 
         if (ArrayUtils.isEmpty(parameters)) {
             return null;
+        }
+
+        if (1 == parameters.length && null != parameters[0].getAnnotation(RequestBody.class)) {
+            return Tuple2.build(parameters[0].getType(), true);
         }
 
         String newClassName = BridgeClassNameBuilder.buildNewClassName(BridgeClassNameBuilder.NEW_REQUEST_CLASS_NAME_PRE, simpleClassName);
@@ -60,13 +66,13 @@ public class BridgeRequestBuilder {
             }
             newCtClass.writeFile(SpringfoxBridge.getBridgeClassFilePath());
 
-            return newCtClass.toClass();
+            return Tuple2.build(newCtClass.toClass(), false);
 
         } catch (Exception e) {
 
             String parameterInfo = "";
-            for(Parameter parameter: parameters){
-                parameterInfo+=parameter.toString()+"|";
+            for (Parameter parameter : parameters) {
+                parameterInfo += parameter.toString() + "|";
             }
             log.error("new request class failed, simple class name is {}, parameters are {}.", simpleClassName, parameterInfo, e);
             throw new BridgeException(e);
@@ -79,7 +85,7 @@ public class BridgeRequestBuilder {
         String[] annotationMethodNames = new String[]{"value", "name", "allowableValues", "access", "notes",
                 "dataType", "required", "position", "hidden", "example", "readOnly", "reference"};
 
-       return JavassistUtil.copyAnnotationValues(bridgeModelProperty, ApiModelProperty.class, constpool, annotationMethodNames);
+        return JavassistUtil.copyAnnotationValues(bridgeModelProperty, ApiModelProperty.class, constpool, annotationMethodNames);
     }
 
     private static Annotation getApiModelAnnotation(ConstPool constpool) {
