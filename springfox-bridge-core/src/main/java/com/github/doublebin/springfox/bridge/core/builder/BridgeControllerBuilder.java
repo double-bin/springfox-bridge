@@ -142,11 +142,16 @@ public class BridgeControllerBuilder {
                 int size = parameters.length;
 
                 String body = "{Object orignalValue = this.bean." + methodName + "(";
-                for (int i = 0; i < size; i++) {
 
-                    body += ("$1.getParam" + i + "()"); //$1 means the first parameter
-                    if (i != size - 1) {
-                        body += ",";
+                if (isOrignalClass) {
+                    body += ("$1"); //$1 means the first parameter
+                } else {
+                    for (int i = 0; i < size; i++) {
+
+                        body += ("$1.getParam" + i + "()"); //$1 means the first parameter
+                        if (i != size - 1) {
+                            body += ",";
+                        }
                     }
                 }
 
