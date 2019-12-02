@@ -1,10 +1,12 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,6 +57,7 @@ public class BridgeControllerBuilder {
                     if (ReflectUtil.hasAnnotationAtMethod(method, BridgeOperation.class)) {
                         String methodName = method.getName();
 
+
                         Tuple2<Class, Boolean> requestBodyClassTuple = BridgeRequestBuilder.newRequestClass(method, oldClass.getSimpleName() + StringUtil.toCapitalizeCamelCase(methodName) + "Request");
 
                         CtMethod newCtMethod = addAndGetHomonymicMethod(method, newControllerCtClass, requestBodyClassTuple);
@@ -95,6 +98,12 @@ public class BridgeControllerBuilder {
             Class returnType = method.getReturnType();
             Parameter[] parameters = method.getParameters();
 
+            List<Class> parameterClassess = new ArrayList<>();
+            for (Parameter parameter : parameters) {
+                parameterClassess.add(parameter.getType());
+            }
+
+
             Class newReplaceClass = BridgeGenericReplaceBuilder.buildReplaceClass(method.getGenericReturnType(), null);
             if (returnType.equals(newReplaceClass)) {
 
@@ -108,16 +117,83 @@ public class BridgeControllerBuilder {
 
                 int size = parameters.length;
 
-                String body = "{return this.bean." + methodName + "(";
+                String body = "{java.lang.reflect.Method originalMethod = this.bean.getClass().getMethod(\"" + methodName + "\",new Class[]{";
 
                 if (isOrignalClass) {
 
-                    body += ("$1"); //$1 means the first parameter
+                    body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(0).getName() + "\")";
+                    body += "});";
+
+                    body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
+                    body += "java.lang.String jsonStr = com.github.doublebin.springfox.bridge.core.util.JsonUtil.writeValueAsString($1);";
+
+
+                    body += "Object orignalRequestValue = com.github.doublebin.springfox.bridge.core.util.JsonUtil.readValue(jsonStr,parameters[0].getType());";
+
+                    body += getObjectCreateBody(parameterClassess.get(0), "requestValue")
+                            + getArrayCreateBody(parameterClassess.get(0), "requestValues", "requestValue")
+                            + "com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalRequestValue, requestValues);";
+
+
+                    body += "return this.bean." + methodName + "(";
+
+                    body += ("requestValues[0]"); //$1 means the first parameter
                 } else {
+
+
+                    for (int i = 0; i < size; i++) {
+                        body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(i).getName() + "\")";
+                        if (i != size - 1) {
+                            body += ",";
+                        }
+                    }
+                    body += "});";
+                    body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
+
+                    body += "java.lang.String[] jsonStrs = new java.lang.String[" + size + "];";
+                    for (int i = 0; i < size; i++) {
+                        if (parameters[i].getParameterizedType() instanceof Class) {
+
+                        } else {
+                            body += "jsonStrs[" + i + "]=com.github.doublebin.springfox.bridge.core.util.JsonUtil.writeValueAsString($1.getParam" + i + "());";
+                        }
+
+                    }
 
                     for (int i = 0; i < size; i++) {
 
-                        body += ("$1.getParam" + i + "()"); //$1 means the first parameter
+                        if (parameters[i].getParameterizedType() instanceof Class) {
+
+                            if (StringUtils.equalsAny(parameterClassess.get(i).getName(), "int", "long", "char", "boolean", "short", "byte", "float", "double")) {
+                                body += parameterClassess.get(i).getName() + " requestValue" + i + "=$1.getParam" + i + "();";
+                            } else {
+                                body += getObjectCreateBody(parameterClassess.get(i), "requestValue" + i)
+                                        + "requestValue" + i + "=$1.getParam" + i + "();";
+                            }
+
+                        } else {
+                            body += "Object orignalRequestValue" + i + " = com.github.doublebin.springfox.bridge.core.util.JsonUtil.readValue(jsonStrs[" + i + "],parameters[" + i + "].getType());";
+
+                            body += getObjectCreateBody(parameterClassess.get(i), "requestValue" + i)
+                                    + getArrayCreateBody(parameterClassess.get(i), "requestValues" + i, "requestValue" + i)
+                                    + "com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalRequestValue" + i + ", requestValues" + i + ");";
+                        }
+
+
+                    }
+
+
+                    body += "return this.bean." + methodName + "(";
+
+
+                    for (int i = 0; i < size; i++) {
+
+
+                        if (parameters[i].getParameterizedType() instanceof Class) {
+                            body += ("requestValue" + i); //$1 means the first parameter
+                        } else {
+                            body += ("requestValues" + i + "[0]"); //$1 means the first parameter
+                        }
                         if (i != size - 1) {
                             body += ",";
                         }
@@ -189,13 +265,77 @@ public class BridgeControllerBuilder {
     }
 
     private static String getObjectCreateBody(Class clazz, String objectName) {
+
+
+        if (StringUtils.equals("int", clazz.getName())) {
+            clazz = Integer.class;
+        } else if (StringUtils.equals("long", clazz.getName())) {
+            clazz = Long.class;
+        } else if (StringUtils.equals("float", clazz.getName())) {
+            clazz = Float.class;
+        } else if (StringUtils.equals("double", clazz.getName())) {
+            clazz = Double.class;
+        } else if (StringUtils.equals("char", clazz.getName())) {
+            clazz = Character.class;
+        } else if (StringUtils.equals("short", clazz.getName())) {
+            clazz = Short.class;
+        } else if (StringUtils.equals("byte", clazz.getName())) {
+            clazz = byte.class;
+        } else if (StringUtils.equals("boolean", clazz.getName())) {
+            clazz = Boolean.class;
+        }
+
+
         String classBodyName = getClassBodyName(clazz);
         String body = classBodyName + " " + objectName + " = new ";
         if (StringUtils.endsWith(classBodyName, "[]")) {
             String tempInitName = StringUtils.replaceFirst(classBodyName, "\\x5B+?", "[1");
             return body + tempInitName + ";";
         } else {
-            return body + classBodyName + "();";
+            //TODO
+            if (hasNoArgsConstructor(clazz)) {
+                return body + classBodyName + "();";
+            } else {
+                Constructor[] constructors = clazz.getConstructors();
+                body += classBodyName + "(";
+
+                Constructor constructor = constructors[0];
+                Class<?>[] clazzes = constructor.getParameterTypes();
+
+
+                for (int i = 0; i < clazzes.length; i++) {
+                    Class clazze = clazzes[i];
+                    if (clazze.equals(String.class)) {
+                        body += "\"0\"";
+                    } else if (clazze.equals(Integer.class) || StringUtils.equals("int", clazze.getName())) {
+                        body += "0";
+                    } else if (clazze.equals(Long.class) || StringUtils.equals("long", clazze.getName())) {
+                        body += "0L";
+                    } else if (clazze.equals(Float.class) || StringUtils.equals("float", clazze.getName())) {
+                        body += "0.0F";
+                    } else if (clazze.equals(Double.class) || StringUtils.equals("double", clazze.getName())) {
+                        body += "0.0";
+                    } else if (clazze.equals(Character.class) || StringUtils.equals("char", clazze.getName())) {
+                        body += "\'0\'";
+                    } else if (clazze.equals(Short.class) || StringUtils.equals("short", clazze.getName())) {
+                        body += "0";
+                    } else if (clazze.equals(Byte.class) || StringUtils.equals("byte", clazze.getName())) {
+                        body += "0";
+                    } else if (clazze.equals(Boolean.class) || StringUtils.equals("boolean", clazze.getName())) {
+                        body += "false";
+                    } else {
+                        body += "null";
+                    }
+
+
+                    if (i != clazzes.length - 1) {
+                        body += ",";
+                    }
+                }
+
+                return body + ");";
+            }
+
         }
     }
 
@@ -344,4 +484,23 @@ public class BridgeControllerBuilder {
 
     }
 
+    public static boolean hasNoArgsConstructor(Class clazz) {
+        try {
+            clazz.getConstructor();
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+
+    public static void main(String[] args) throws NoSuchMethodException, IllegalAccessException, InstantiationException {
+        int i = 12;
+        Object a = i;
+        Class clazz = a.getClass();
+        Constructor<?>[] constructors = clazz.getConstructors();
+        System.out.println(constructors);
+
+
+    }
 }

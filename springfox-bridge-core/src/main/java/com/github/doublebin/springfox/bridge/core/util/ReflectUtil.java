@@ -63,6 +63,14 @@ public class ReflectUtil {
         }
     }
 
+    public static Class<?> getClassByName(String className) {
+        try {
+            return Class.forName(className);
+        } catch (java.lang.ClassNotFoundException e) {
+            throw new BridgeException("Class not found.", e);
+        }
+    }
+
     public static boolean hasNull(Object[] args) {
         for (Object arg : args) {
             if (null == arg) {
@@ -168,14 +176,14 @@ public class ReflectUtil {
             try {
                 return annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
-                NoSuchMethodException
-                | SecurityException e) {
+                    NoSuchMethodException
+                    | SecurityException e) {
                 throw new BridgeException(MessageFormat.format(
-                    "Get annotation value at method [{0}] failed, annotation name is [{1}], annotation method is "
-                        + "[{2}].",
-                    method.getName(),
-                    annotationClass.getName(),
-                    annotationMethodName), e);
+                        "Get annotation value at method [{0}] failed, annotation name is [{1}], annotation method is "
+                                + "[{2}].",
+                        method.getName(),
+                        annotationClass.getName(),
+                        annotationMethodName), e);
             }
         } else {
             return null;
@@ -189,14 +197,14 @@ public class ReflectUtil {
             try {
                 return annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
-                NoSuchMethodException
-                | SecurityException e) {
+                    NoSuchMethodException
+                    | SecurityException e) {
                 log.error(
-                    "Get annotation value at class [{}] failed, annotation name is [{}], annotation method is [{}].",
-                    clazz.getName(),
-                    annotationClass.getName(),
-                    annotationMethodName,
-                    e);
+                        "Get annotation value at class [{}] failed, annotation name is [{}], annotation method is [{}].",
+                        clazz.getName(),
+                        annotationClass.getName(),
+                        annotationMethodName,
+                        e);
                 throw new BridgeException(e);
             }
         } else {
@@ -211,13 +219,13 @@ public class ReflectUtil {
             }
             return object.getClass().getDeclaredMethod(methodName).invoke(object);
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
-            NoSuchMethodException
-            | SecurityException e) {
+                NoSuchMethodException
+                | SecurityException e) {
             log.error(
-                "Invoke method failed, object class is [{}], method is [{}].",
-                object.getClass().getName(),
-                methodName,
-                e);
+                    "Invoke method failed, object class is [{}], method is [{}].",
+                    object.getClass().getName(),
+                    methodName,
+                    e);
             throw new BridgeException("Invoke method failed.", e);
         }
     }
@@ -235,16 +243,16 @@ public class ReflectUtil {
                 if (annotation.annotationType().equals(annotationClass)) {
                     try {
                         annotationValues.add(
-                            annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation));
+                                annotation.getClass().getDeclaredMethod(annotationMethodName).invoke(annotation));
                     } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                        | NoSuchMethodException | SecurityException e) {
+                            | NoSuchMethodException | SecurityException e) {
                         log.error(
-                            "Get annotation values at Method [{}] failed, annotation name is [{}], annotation method "
-                                + "is [{}].",
-                            method.getName(),
-                            annotationClass.getName(),
-                            annotationMethodName,
-                            e);
+                                "Get annotation values at Method [{}] failed, annotation name is [{}], annotation method "
+                                        + "is [{}].",
+                                method.getName(),
+                                annotationClass.getName(),
+                                annotationMethodName,
+                                e);
                         throw new BridgeException(e);
                     }
                     break;
@@ -325,7 +333,7 @@ public class ReflectUtil {
         try {
             Method getGenericInfoMethod = Class.class.getDeclaredMethod("getGenericInfo");
             getGenericInfoMethod.setAccessible(true);
-            return (ClassRepository)getGenericInfoMethod.invoke(clazz);
+            return (ClassRepository) getGenericInfoMethod.invoke(clazz);
         } catch (Exception e) {
             throw new BridgeException("Get ClassRepository failed for calss : " + clazz.getName(), e);
         }
@@ -363,7 +371,7 @@ public class ReflectUtil {
             if (null == o || !(o instanceof String)) {
                 return null;
             }
-            return (String)o;
+            return (String) o;
         } catch (Exception e) {
             throw new BridgeException("Get genericSignature failed for field : " + field.getName(), e);
         }
@@ -377,11 +385,11 @@ public class ReflectUtil {
             Method getTreeMethod = AbstractRepository.class.getDeclaredMethod("getTree");
             getTreeMethod.setAccessible(true);
             Object o = getTreeMethod.invoke(classRepository);
-            ClassSignature classSignature = (ClassSignature)o;
+            ClassSignature classSignature = (ClassSignature) o;
             return classSignature;
         } catch (Exception e) {
             throw new BridgeException("Get classSignature failed for classRepository : " + classRepository.toString(),
-                e);
+                    e);
         }
     }
 

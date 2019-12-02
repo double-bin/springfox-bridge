@@ -17,12 +17,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 
 @Slf4j
 public class BridgeRequestBuilder {
 
     private static final ClassPool pool = ClassPool.getDefault();
 
+    /**
+     * @param method
+     * @param simpleClassName
+     * @return Tuple2.fst: Class , Tuple2.snd: is originalClass
+     */
     public static Tuple2<Class, Boolean> newRequestClass(Method method, String simpleClassName) {
         Parameter[] parameters = method.getParameters();
 
@@ -31,7 +37,10 @@ public class BridgeRequestBuilder {
         }
 
         if (1 == parameters.length && null != parameters[0].getAnnotation(RequestBody.class)) {
-            return Tuple2.build(parameters[0].getType(), true);
+
+            Type type = parameters[0].getParameterizedType();
+            Class newReplaceClass = BridgeGenericReplaceBuilder.buildReplaceClass(type, null);
+            return Tuple2.build(newReplaceClass, true);
         }
 
         String newClassName = BridgeClassNameBuilder.buildNewClassName(BridgeClassNameBuilder.NEW_REQUEST_CLASS_NAME_PRE, simpleClassName);
@@ -45,7 +54,10 @@ public class BridgeRequestBuilder {
             int i = 0;
 
             for (Parameter parameter : parameters) {
-                Class parameterClass = parameter.getType();
+
+                Type type = parameter.getParameterizedType();
+                Class parameterClass = BridgeGenericReplaceBuilder.buildReplaceClass(type, null);
+                //Class parameterClass = parameter.getType();
 
                 Annotation apiModelAnnotation = getApiModelAnnotation(constpool);
                 JavassistUtil.addAnnotationForCtClass(newCtClass, apiModelAnnotation);
