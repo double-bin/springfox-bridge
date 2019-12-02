@@ -38,6 +38,7 @@ public class JavassistUtil {
 
     public static void setSuperClassForCtClass(CtClass subCtClass, Class superClass) {
         try {
+            pool.insertClassPath(new ClassClassPath(superClass));
             subCtClass.setSuperclass(pool.get(superClass.getName()));
             CtClass[] params = new CtClass[]{};
             CtConstructor ctor = CtNewConstructor.make(params, null, CtNewConstructor.PASS_PARAMS, null, null, subCtClass);
