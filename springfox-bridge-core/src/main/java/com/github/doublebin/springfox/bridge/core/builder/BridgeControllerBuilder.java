@@ -123,7 +123,7 @@ public class BridgeControllerBuilder {
                 if (isOrignalClass) {
 
                     body += "new Class[]{";
-                    body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(0).getName() + "\")";
+                    body += parameterClassess.get(0).getName() + ".class";
                     body += "});";
 
                     body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
@@ -155,7 +155,7 @@ public class BridgeControllerBuilder {
                     } else {
                         body += "new Class[]{";
                         for (int i = 0; i < size; i++) {
-                            body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(i).getName() + "\")";
+                            body += parameterClassess.get(i).getName() + ".class";
                             if (i != size - 1) {
                                 body += ",";
                             }
@@ -243,7 +243,7 @@ public class BridgeControllerBuilder {
                 if (isOrignalClass) {
 
                     body += "new Class[]{";
-                    body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(0).getName() + "\")";
+                    body += parameterClassess.get(0).getName() + ".class";
                     body += "});";
 
                     body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
@@ -275,7 +275,7 @@ public class BridgeControllerBuilder {
                     } else {
                         body += "new Class[]{";
                         for (int i = 0; i < size; i++) {
-                            body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(i).getName() + "\")";
+                            body += parameterClassess.get(i).getName() + ".class";
                             if (i != size - 1) {
                                 body += ",";
                             }
