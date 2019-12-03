@@ -2,6 +2,7 @@ package com.github.doublebin.springfox.bridge.core.util;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
@@ -120,6 +121,13 @@ public class JsonUtil {
 
     public static void main(String[] args) {
         JsonUtil.writeValueAsString(2);
+
+        Long[] dd = new Long[1];
+        List<Long> ids = null;
+        List<Long> orignalValue = new ArrayList();
+
+        List<Long>[] idss = new ArrayList[1];
+
     }
 
 }
