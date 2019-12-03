@@ -65,6 +65,26 @@ public class ReflectUtil {
 
     public static Class<?> getClassByName(String className) {
         try {
+            switch (className) {
+                case "int":
+                    return int.class;
+                case "long":
+                    return long.class;
+                case "float":
+                    return float.class;
+                case "double":
+                    return double.class;
+                case "char":
+                    return char.class;
+                case "boolean":
+                    return boolean.class;
+                case "byte":
+                    return byte.class;
+                case "short":
+                    return short.class;
+                default:
+                    break;
+            }
             return Class.forName(className);
         } catch (java.lang.ClassNotFoundException e) {
             throw new BridgeException("Class not found.", e);

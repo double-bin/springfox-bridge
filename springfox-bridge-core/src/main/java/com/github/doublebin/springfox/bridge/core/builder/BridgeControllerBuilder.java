@@ -64,7 +64,7 @@ public class BridgeControllerBuilder {
 
                         addAnnotationsAtMethod(newCtMethod, method);
 
-                        if (null != requestBodyClassTuple.getFst()) {
+                        if (null != requestBodyClassTuple && null != requestBodyClassTuple.getFst()) {
                             addAnnotationsAtMethodParameters(newCtMethod);
                         }
                     }
@@ -117,10 +117,12 @@ public class BridgeControllerBuilder {
 
                 int size = parameters.length;
 
-                String body = "{java.lang.reflect.Method originalMethod = this.bean.getClass().getMethod(\"" + methodName + "\",new Class[]{";
+                String body = "{java.lang.reflect.Method originalMethod = this.bean.getClass().getMethod(\"" + methodName + "\",";
+
 
                 if (isOrignalClass) {
 
+                    body += "new Class[]{";
                     body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(0).getName() + "\")";
                     body += "});";
 
@@ -141,13 +143,21 @@ public class BridgeControllerBuilder {
                 } else {
 
 
-                    for (int i = 0; i < size; i++) {
-                        body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(i).getName() + "\")";
-                        if (i != size - 1) {
-                            body += ",";
+                    if (0 == size) {
+                        body += "null";
+                    } else {
+                        body += "new Class[]{";
+                        for (int i = 0; i < size; i++) {
+                            body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(i).getName() + "\")";
+                            if (i != size - 1) {
+                                body += ",";
+                            }
                         }
+                        body += "}";
                     }
-                    body += "});";
+
+
+                    body += ");";
                     body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
 
                     body += "java.lang.String[] jsonStrs = new java.lang.String[" + size + "];";
@@ -217,14 +227,88 @@ public class BridgeControllerBuilder {
 
                 int size = parameters.length;
 
-                String body = "{Object orignalValue = this.bean." + methodName + "(";
+                String body = "{java.lang.reflect.Method originalMethod = this.bean.getClass().getMethod(\"" + methodName + "\",";
 
                 if (isOrignalClass) {
-                    body += ("$1"); //$1 means the first parameter
+
+                    body += "new Class[]{";
+                    body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(0).getName() + "\")";
+                    body += "});";
+
+                    body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
+                    body += "java.lang.String jsonStr = com.github.doublebin.springfox.bridge.core.util.JsonUtil.writeValueAsString($1);";
+
+
+                    body += "Object orignalRequestValue = com.github.doublebin.springfox.bridge.core.util.JsonUtil.readValue(jsonStr,parameters[0].getType());";
+
+                    body += getObjectCreateBody(parameterClassess.get(0), "requestValue")
+                            + getArrayCreateBody(parameterClassess.get(0), "requestValues", "requestValue")
+                            + "com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalRequestValue, requestValues);";
+
+                    body += "Object orignalValue = this.bean." + methodName + "(requestValues[0]";
+
                 } else {
+
+                    if (0 == size) {
+                        body += "null";
+                    } else {
+                        body += "new Class[]{";
+                        for (int i = 0; i < size; i++) {
+                            body += "com.github.doublebin.springfox.bridge.core.util.ReflectUtil.getClassByName(\"" + parameterClassess.get(i).getName() + "\")";
+                            if (i != size - 1) {
+                                body += ",";
+                            }
+                        }
+                        body += "}";
+                    }
+
+
+                    body += ");";
+                    body += "java.lang.reflect.Parameter[] parameters = originalMethod.getParameters();";
+
+                    body += "java.lang.String[] jsonStrs = new java.lang.String[" + size + "];";
+                    for (int i = 0; i < size; i++) {
+                        if (parameters[i].getParameterizedType() instanceof Class) {
+
+                        } else {
+                            body += "jsonStrs[" + i + "]=com.github.doublebin.springfox.bridge.core.util.JsonUtil.writeValueAsString($1.getParam" + i + "());";
+                        }
+
+                    }
+
                     for (int i = 0; i < size; i++) {
 
-                        body += ("$1.getParam" + i + "()"); //$1 means the first parameter
+                        if (parameters[i].getParameterizedType() instanceof Class) {
+
+                            if (StringUtils.equalsAny(parameterClassess.get(i).getName(), "int", "long", "char", "boolean", "short", "byte", "float", "double")) {
+                                body += parameterClassess.get(i).getName() + " requestValue" + i + "=$1.getParam" + i + "();";
+                            } else {
+                                body += getObjectCreateBody(parameterClassess.get(i), "requestValue" + i)
+                                        + "requestValue" + i + "=$1.getParam" + i + "();";
+                            }
+
+                        } else {
+                            body += "Object orignalRequestValue" + i + " = com.github.doublebin.springfox.bridge.core.util.JsonUtil.readValue(jsonStrs[" + i + "],parameters[" + i + "].getType());";
+
+                            body += getObjectCreateBody(parameterClassess.get(i), "requestValue" + i)
+                                    + getArrayCreateBody(parameterClassess.get(i), "requestValues" + i, "requestValue" + i)
+                                    + "com.github.doublebin.springfox.bridge.core.util.JsonUtil.copyValue(orignalRequestValue" + i + ", requestValues" + i + ");";
+                        }
+
+
+                    }
+
+
+                    body += "Object orignalValue = this.bean." + methodName + "(";
+
+                    for (int i = 0; i < size; i++) {
+
+
+                        if (parameters[i].getParameterizedType() instanceof Class) {
+                            body += ("requestValue" + i); //$1 means the first parameter
+                        } else {
+                            body += ("requestValues" + i + "[0]"); //$1 means the first parameter
+                        }
                         if (i != size - 1) {
                             body += ",";
                         }
