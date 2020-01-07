@@ -24,8 +24,8 @@ public class CommonResponse<TM, S> {
     private S model;
 
     @ApiModelProperty(value = "结果码", required = true)
-    private String code;
+    private String code = "ttcode";
 
     @ApiModelProperty(value = "响应消息", required = true)
-    private String message;
+    private String message = "ok";
 }

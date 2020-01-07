@@ -11,7 +11,7 @@ import com.github.doublebin.springfox.bridge.demo.model.TestResult;
 import org.springframework.stereotype.Service;
 
 @Service
-@BridgeApi(value = "TestService2 Apis", description = "测试服务2")
+//@BridgeApi(value = "TestService2 Apis", description = "测试服务2")
 @BridgeGroup("test-group2")
 public class TestService2 {
     @BridgeOperation(value = "测试查询", notes = "返回泛型测试")

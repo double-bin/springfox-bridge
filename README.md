@@ -43,7 +43,7 @@ A plugin to create swagger documents for no restful apis.
         <dependency>
             <groupId>com.github.double-bin</groupId>
             <artifactId>springfox-bridge-spring-boot-starter</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
         </dependency>
 ```
 2) 非springboot项目：
@@ -51,7 +51,7 @@ A plugin to create swagger documents for no restful apis.
         <dependency>
             <groupId>com.github.double-bin</groupId>
             <artifactId>springfox-bridge-core</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
         </dependency>
 ```
 
