@@ -1,20 +1,13 @@
 package com.github.doublebin.springfox.bridge.core.builder;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.github.doublebin.springfox.bridge.core.SpringfoxBridge;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeApi;
 import com.github.doublebin.springfox.bridge.core.builder.annotations.BridgeOperation;
 import com.github.doublebin.springfox.bridge.core.component.tuple.Tuple2;
 import com.github.doublebin.springfox.bridge.core.exception.BridgeException;
+import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
+import com.github.doublebin.springfox.bridge.core.util.ReflectUtil;
+import com.github.doublebin.springfox.bridge.core.util.StringUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import javassist.*;
@@ -28,9 +21,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import com.github.doublebin.springfox.bridge.core.util.ReflectUtil;
-import com.github.doublebin.springfox.bridge.core.util.StringUtil;
-import com.github.doublebin.springfox.bridge.core.util.JavassistUtil;
+
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class BridgeControllerBuilder {
@@ -537,7 +536,12 @@ public class BridgeControllerBuilder {
     private static void addTagsMember(Annotation apiAnnotation, Class oldClass, ConstPool constpool) {
         String[] tags = (String[]) ReflectUtil.getAnnotationValue(oldClass, BridgeApi.class, "tags");
         List<StringMemberValue> tagsList = new ArrayList<StringMemberValue>();
-        tagsList.add(new StringMemberValue(oldClass.getName(), constpool));
+
+        // 仅当没有指定 tags 时，才添加默认值：当前类名
+        if (tags.length == 1 && tags[0].equals("")) {
+            tagsList.add(new StringMemberValue(oldClass.getName(), constpool));
+        }
+
         if (ArrayUtils.isNotEmpty(tags)) {
             for (String tag : tags) {
                 if (StringUtil.isNoneBlank(tag)) {
